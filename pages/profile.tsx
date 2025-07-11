@@ -1,24 +1,24 @@
-import { GetServerSideProps } from 'next';
-import { getSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
 export default function Profile() {
-  return <div>Profile</div>;
-}
+  const router = useRouter();
 
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  if (!session) {
-    return {
-      redirect: {
-        permanent: false,
-        destination: '/'
-      }
-    };
-  }
-  return {
-    redirect: {
-      permanent: false,
-      destination: `/${session.username}`
-    }
-  };
-};
+  useEffect(() => {
+    // Redirect to home page since we don't have user profiles anymore
+    router.push('/');
+  }, [router]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Redirecting...
+        </h1>
+        <p className="text-gray-600">
+          User profiles are not available in the network manager.
+        </p>
+      </div>
+    </div>
+  );
+}

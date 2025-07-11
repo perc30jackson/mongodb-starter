@@ -1,40 +1,24 @@
-import { GetServerSideProps } from 'next';
-import Profile from '@/components/profile';
-import { defaultMetaProps } from '@/components/layout/meta';
-import { getUser, getAllUsers, UserProps, getUserCount } from '@/lib/api/user';
-import { getSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-export default function Settings({ user }: { user: UserProps }) {
-  return <Profile settings={true} user={user} />;
+export default function Settings() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to home page since we don't have user settings anymore
+    router.push('/');
+  }, [router]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Redirecting...
+        </h1>
+        <p className="text-gray-600">
+          User settings are not available in the network manager.
+        </p>
+      </div>
+    </div>
+  );
 }
-
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const session = await getSession({ req });
-  if (!session) {
-    return {
-      redirect: {
-        permanent: false,
-        destination: '/'
-      }
-    };
-  }
-
-  const results = await getAllUsers();
-  const totalUsers = await getUserCount();
-
-  const user = await getUser(session.username as string);
-
-  const meta = {
-    ...defaultMetaProps,
-    title: `Settings | MongoDB Starter Kit`
-  };
-
-  return {
-    props: {
-      meta,
-      results,
-      totalUsers,
-      user
-    }
-  };
-};

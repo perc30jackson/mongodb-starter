@@ -1,41 +1,86 @@
-# MongoDB Starter – Developer Directory
+# Cisco Meraki Network Manager
 
-A developer directory built on [Next.js](https://nextjs.org/) and [MongoDB Atlas](https://www.mongodb.com/atlas/database), deployed on [Vercel](https://vercel.com/) with the [Vercel + MongoDB integration](https://vercel.com/integrations/mongodbatlas).
+A modern Cisco Meraki network management dashboard built with Next.js, MongoDB, and shadcn/ui components.
 
-![](/public/og.png)
+## Features
 
-Featured on the [MongoDB World](https://www.mongodb.com/world-2022) keynote.
+- **Network Directory**: Browse and search your Meraki networks
+- **Device Management**: View, control, and monitor network devices  
+- **Firewall Management**: Dedicated firewall configuration and monitoring
+- **Switch Management**: Switch port configuration and VLAN management
+- **Bulk Operations**: Select multiple networks/devices for batch operations
+- **Meraki API Integration**: Real-time data sync with Cisco Meraki Dashboard
+- **Network Analytics**: View clients, traffic, and network statistics
+- **Device Controls**: Blink LEDs, reboot devices, check status
+- **Auto Sync**: Automatically sync data from Meraki API
 
-## Deployment Instructions
+## Prerequisites
 
-You will need to create a [GitHub OAuth App](https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app) to use this starter. Here are the steps:
+1. **MongoDB**: Local MongoDB instance running on `mongodb://localhost:27017`
+2. **Meraki API Key**: Generate from your Meraki Dashboard (Organization > Settings > Dashboard API access)
+3. **Node.js**: Version 16 or higher
 
-1. Go to https://github.com/settings/developers and create a new OAuth application
-2. Name your application **"MongoDB Starter"**
-3. Set the homepage URL to **`https://vercel.app`** for now (we'll change this later)
-4. Set the authorization callback URL to **`https://vercel.app/api/auth/callback/github`** for now (we'll change this later)
-5. Click "Register application".
-6. Once the application is created, copy the "Client ID". This will be your **`GITHUB_CLIENT_ID`**.
-7. Generate a new client secret and copy that too. This will be your **`GITHUB_CLIENT_SECRET`**.
-8. Generate a random secret [here](https://generate-secret.vercel.app/32). This will be your **`NEXTAUTH_SECRET`**.
-9. Click on this button below to clone and deploy this template to Vercel.
+## Setup Instructions
 
-  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fmongodb-starter&project-name=mongodb-nextjs&repository-name=mongodb-nextjs&demo-title=MongoDB%20Developer%20Directory&demo-description=Log%20in%20with%20GitHub%20to%20create%20a%20directory%20of%20contacts.&demo-url=https%3A%2F%2Fmongodb.vercel.app%2F&demo-image=https%3A%2F%2Fmongodb.vercel.app%2Fog.png&integration-ids=oac_jnzmjqM10gllKmSrG0SGrHOH&env=GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET,NEXTAUTH_SECRET&envDescription=Instructions%20on%20how%20to%20configure%20these%20env%20vars:&envLink=https://github.com/vercel/mongodb-starter/blob/main/.env.example)
+### 1. Clone and Install
 
-10. Once your application is deployed, **edit the homepage & callback URLs in your GitHub OAuth App to match your deployment URL**.
+```bash
+git clone <your-repo-url>
+cd mongodb-starter
+npm install
+```
 
-## Demo
+### 2. Configure Environment Variables
 
-https://mongodb.vercel.app
+Copy `.env.example` to `.env.local` and fill in your values:
 
-## Vercel + MongoDB Integration
+```bash
+cp .env.example .env.local
+```
 
-https://vercel.com/integrations/mongodbatlas
+Required environment variables:
+- `MONGODB_URI`: Your local MongoDB connection string (default: `mongodb://localhost:27017/meraki-dashboard`)
+- `MERAKI_API_KEY`: Your Cisco Meraki API key
+
+### 3. Start MongoDB
+
+Make sure MongoDB is running locally:
+
+```bash
+# On Windows (if MongoDB is installed as a service)
+net start MongoDB
+
+# On macOS/Linux
+mongod
+
+# Or using Docker
+docker run -d -p 27017:27017 --name mongodb mongo:latest
+```
+
+### 4. Sync Meraki Data
+
+Initial sync of your Meraki networks:
+
+```bash
+npm run sync-meraki
+```
+
+### 5. Start Development Server
+
+```bash
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
 ## Tech Stack
 
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [NextAuth.js](https://next-auth.js.org/)
-- [MongoDB Atlas](https://www.mongodb.com/atlas/database)
-- [Vercel](https://vercel.com/)
+- **Frontend**: [Next.js](https://nextjs.org/), [React](https://reactjs.org/), [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/)
+- **Backend**: [Next.js API Routes](https://nextjs.org/docs/api-routes/introduction)
+- **Database**: [MongoDB](https://www.mongodb.com/)
+- **API Integration**: [Cisco Meraki API](https://developer.cisco.com/meraki/api-v1/)
+- **HTTP Client**: [Axios](https://axios-http.com/)
+
+## License
+
+MIT License - feel free to use this project for your own Meraki network management needs.

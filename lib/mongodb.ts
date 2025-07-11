@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-const uri = process.env.MONGODB_URI as string; // your mongodb connection string
+const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/meraki-dashboard'; // local mongodb instance
 const options = {};
 
 declare global {

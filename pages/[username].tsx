@@ -1,80 +1,24 @@
-import { ParsedUrlQuery } from 'querystring';
-import { GetStaticProps } from 'next';
-import { defaultMetaProps } from '@/components/layout/meta';
-import { getUser, getAllUsers, getUserCount } from '@/lib/api/user';
-export { default } from '.';
-import clientPromise from '@/lib/mongodb';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 
-interface Params extends ParsedUrlQuery {
-  username: string;
-}
+export default function UsernamePage() {
+  const router = useRouter();
 
-export const getStaticPaths = async () => {
-  // You should remove this try-catch block once your MongoDB Cluster is fully provisioned
-  try {
-    await clientPromise;
-  } catch (e: any) {
-    // cluster is still provisioning
-    return {
-      paths: [],
-      fallback: true
-    };
-  }
+  useEffect(() => {
+    // Redirect to home page since we don't have user profiles anymore
+    router.push('/');
+  }, [router]);
 
-  const results = await getAllUsers();
-  const paths = results.flatMap(({ users }) =>
-    users.map((user) => ({ params: { username: user.username } }))
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Redirecting...
+        </h1>
+        <p className="text-gray-600">
+          User profiles are not available in the network manager.
+        </p>
+      </div>
+    </div>
   );
-  return {
-    paths,
-    fallback: true
-  };
-};
-
-export const getStaticProps: GetStaticProps = async (context) => {
-  // You should remove this try-catch block once your MongoDB Cluster is fully provisioned
-  try {
-    await clientPromise;
-  } catch (e: any) {
-    if (e.code === 'ENOTFOUND') {
-      // cluster is still provisioning
-      return {
-        props: {
-          clusterStillProvisioning: true
-        }
-      };
-    } else {
-      throw new Error(`Connection limit reached. Please try again later.`);
-    }
-  }
-
-  const { username } = context.params as Params;
-  const user = await getUser(username);
-  if (!user) {
-    return {
-      notFound: true,
-      revalidate: 10
-    };
-  }
-
-  const results = await getAllUsers();
-  const totalUsers = await getUserCount();
-
-  const ogUrl = `https://mongodb.vercel.app/${user.username}`;
-  const meta = {
-    ...defaultMetaProps,
-    title: `${user.name}'s Profile | MongoDB Starter Kit`,
-    ogImage: `https://api.microlink.io/?url=${ogUrl}&screenshot=true&meta=false&embed=screenshot.url`,
-    ogUrl: `https://mongodb.vercel.app/${user.username}`
-  };
-
-  return {
-    props: {
-      meta,
-      results,
-      totalUsers,
-      user
-    },
-    revalidate: 10
-  };
-};
+}

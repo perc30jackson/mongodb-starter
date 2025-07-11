@@ -1,17 +1,25 @@
-import { useSession, signIn, signOut } from 'next-auth/react';
-import { useState } from 'react';
-import { LoadingDots } from '@/components/icons';
-import Image from 'next/image';
 import { MenuIcon } from '@heroicons/react/outline';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { Building2, Network, ChevronDown, Globe, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Navbar({
   setSidebarOpen
 }: {
   setSidebarOpen: (open: boolean) => void;
 }) {
-  const { data: session, status } = useSession();
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  
+  // Determine current page based on route
+  const getCurrentPage = () => {
+    if (router.pathname === '/organizations') return 'organizations';
+    if (router.pathname === '/reports') return 'reports';
+    if (router.pathname === '/networks' || router.pathname === '/') return 'networks';
+    return 'networks';
+  };
+
+  const currentPage = getCurrentPage();
 
   return (
     <nav
@@ -20,45 +28,55 @@ export default function Navbar({
     >
       <button
         type="button"
-        className="inline-flex md:hidden items-center justify-center rounded-md text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-0"
+        className="inline-flex md:hidden items-center justify-center rounded-md text-foreground hover:text-primary focus:outline-none focus:ring-0"
         onClick={() => setSidebarOpen(true)}
       >
         <span className="sr-only">Open sidebar</span>
         <MenuIcon className="h-6 w-6" aria-hidden="true" />
       </button>
-      {status !== 'loading' &&
-        (session?.user ? (
-          <Link href={`/${session.username}`}>
-            <a className="w-8 h-8 rounded-full overflow-hidden">
-              <Image
-                src={
-                  session.user.image ||
-                  `https://avatar.tobi.sh/${session.user.name}`
-                }
-                alt={session.user.name || 'User'}
-                width={300}
-                height={300}
-                placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQYV2PYsGHDfwAHNAMQumvbogAAAABJRU5ErkJggg=="
-              />
-            </a>
-          </Link>
-        ) : (
-          <button
-            disabled={loading}
+      
+      <div className="flex items-center space-x-4">
+        {/* Navigation Buttons */}
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={currentPage === 'networks' ? 'default' : 'ghost'}
+            size="sm"
             onClick={() => {
-              setLoading(true);
-              signIn('github', { callbackUrl: `/profile` });
+              router.push('/networks');
             }}
-            className={`${
-              loading
-                ? 'bg-gray-200 border-gray-300'
-                : 'bg-black hover:bg-white border-black'
-            } w-36 h-8 py-1 text-white hover:text-black border rounded-md text-sm transition-all`}
+            className="flex items-center space-x-2"
           >
-            {loading ? <LoadingDots color="gray" /> : 'Log in with GitHub'}
-          </button>
-        ))}
+            <Network className="h-4 w-4" />
+            <span>Networks</span>
+          </Button>
+          <Button
+            variant={currentPage === 'organizations' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => {
+              router.push('/organizations');
+            }}
+            className="flex items-center space-x-2"
+          >
+            <Building2 className="h-4 w-4" />
+            <span>Organizations</span>
+          </Button>
+          <Button
+            variant={currentPage === 'reports' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => {
+              router.push('/reports');
+            }}
+            className="flex items-center space-x-2"
+          >
+            <FileText className="h-4 w-4" />
+            <span>Reports</span>
+          </Button>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          Cisco Meraki Network Manager
+        </div>
+      </div>
     </nav>
   );
 }
