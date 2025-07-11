@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { RefreshCw, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, AlertCircle, Info, Loader2 } from 'lucide-react';
 
 interface SyncProgress {
   status: 'starting' | 'progress' | 'completed' | 'error' | 'warning' | 'info';
   message: string;
   step?: string;
+  stage?: string;
   current?: number;
   total?: number;
+  completed?: number;
+  currentItem?: string;
+  isComplete?: boolean;
   organizationName?: string;
   networkName?: string;
   networkCount?: number;
@@ -68,6 +72,8 @@ export default function OrganizationSync({ onSyncComplete }: OrganizationSyncPro
       const newSyncId = `sync-${Date.now()}`;
       setSyncId(newSyncId);
       setSyncProgress({
+        status: 'starting',
+        message: 'Initializing sync...',
         stage: 'Initializing...',
         completed: 0,
         total: 100,
@@ -93,6 +99,8 @@ export default function OrganizationSync({ onSyncComplete }: OrganizationSyncPro
       console.error('Error starting sync:', error);
       setIsSyncing(false);
       setSyncProgress({
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Unknown error',
         stage: 'Error',
         completed: 0,
         total: 100,
@@ -122,7 +130,7 @@ export default function OrganizationSync({ onSyncComplete }: OrganizationSyncPro
 
   const getProgressPercentage = () => {
     if (!syncProgress) return 0;
-    return Math.min(100, Math.max(0, (syncProgress.completed / syncProgress.total) * 100));
+    return Math.min(100, Math.max(0, ((syncProgress.completed || 0) / (syncProgress.total || 1)) * 100));
   };
 
   return (

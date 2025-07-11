@@ -102,7 +102,7 @@ export async function getAllNetworks(): Promise<ResultProps[]> {
         }
       },
       {
-        $limit: 100
+        $limit: 200 // Increased limit for better user experience
       },
       {
         $group: {
@@ -237,6 +237,18 @@ export async function getNetworkDevices(networkId: string): Promise<DeviceProps[
 
 export async function syncNetworksFromMeraki(): Promise<void> {
   try {
+    // Check if we've synced recently to avoid unnecessary API calls
+    const { cache } = await import('@/lib/cache');
+    const syncCacheKey = 'network-sync:last-sync';
+    const lastSync = await cache.get(syncCacheKey, 'sync-status') as string | null;
+    
+    // Only sync if we haven't synced in the last 10 minutes
+    if (lastSync && Date.now() - new Date(lastSync).getTime() < 10 * 60 * 1000) {
+      console.log('Skipping network sync - recently synced');
+      return;
+    }
+
+    console.log('Starting network sync from Meraki API...');
     const organizations = await meraki.getOrganizations();
     const client = await clientPromise;
     const networksCollection = client.db('meraki-dashboard').collection('networks');
@@ -252,6 +264,10 @@ export async function syncNetworksFromMeraki(): Promise<void> {
         );
       }
     }
+    
+    // Update sync timestamp
+    await cache.set(syncCacheKey, new Date().toISOString(), { type: 'sync-status', ttl: 600 }); // 10 minutes TTL
+    console.log('Network sync completed successfully');
   } catch (error) {
     console.error('Error syncing networks from Meraki:', error);
     throw error;
@@ -1616,29 +1632,13 @@ export interface Layer7FirewallRule {
 }
 
 export interface ContentFilteringRule {
-  id?: string;
-  name: string;
-  categories: string[];
-  blockedSites: string[];
-  allowedSites: string[];
-  safeSearch: {
-    google: boolean;
-    bing: boolean;
-    youtube: boolean;
-  };
-  advancedOptions: {
-    blockMalware: boolean;
-    blockPhishing: boolean;
-    httpsInspection: boolean;
-  };
-  schedule?: {
-    timeRange?: {
-      start: string;
-      end: string;
-      days: string[];
-    };
-  };
-  enabled: boolean;
+  allowedUrlPatterns: string[];
+  blockedUrlPatterns: string[];
+  blockedUrlCategories: Array<{
+    id: string;
+    name: string;
+  }>;
+  urlCategoryListSize: 'topSites' | 'fullList';
 }
 
 // Layer 7 Firewall Rules functions
@@ -1652,10 +1652,28 @@ export async function getLayer7FirewallRules(networkId: string): Promise<Layer7F
       return cachedRules;
     }
 
-    console.log(`Fetching Layer 7 firewall rules for ${networkId} from API (cache miss)`);
+    console.log(`Fetching Layer 7 firewall rules for ${networkId} from Meraki API (cache miss)`);
     
-    // Mock data based on actual Meraki Layer 7 Firewall API structure
-    // Real implementation would call: GET /networks/{networkId}/appliance/firewall/l7FirewallRules
+    // Check if we have Meraki API access
+    if (process.env.MERAKI_API_KEY) {
+      try {
+        const merakiApi = new MerakiAPI(process.env.MERAKI_API_KEY);
+        const response = await merakiApi.getFirewallL7Rules(networkId);
+        
+        // The Meraki API returns { rules: [...] }, so extract the rules array
+        const rules = Array.isArray(response) ? response : (response?.rules || []);
+        
+        // Cache the results
+        await FirewallCache.setLayer7Rules(networkId, rules);
+        
+        return rules;
+      } catch (apiError) {
+        console.error('Error fetching from Meraki API, falling back to mock data:', apiError);
+      }
+    }
+    
+    // Fallback to mock data if API is not available or fails
+    console.log('Using mock Layer 7 firewall rules data');
     const rules = [
       {
         policy: 'deny',
@@ -1680,8 +1698,31 @@ export async function getLayer7FirewallRules(networkId: string): Promise<Layer7F
       },
       {
         policy: 'deny',
+        type: 'application',
+        valueObj: {
+          id: '123',
+          name: 'YouTube'
+        }
+      },
+      {
+        policy: 'allow',
+        type: 'applicationCategory',
+        value: 'Business & Economy'
+      },
+      {
+        policy: 'deny',
+        type: 'applicationCategory',
+        value: 'Gaming'
+      },
+      {
+        policy: 'deny',
         type: 'host',
         value: 'gaming.example.com'
+      },
+      {
+        policy: 'allow',
+        type: 'host',
+        value: 'corporate.company.com'
       },
       {
         policy: 'deny',
@@ -1689,9 +1730,19 @@ export async function getLayer7FirewallRules(networkId: string): Promise<Layer7F
         value: '23'
       },
       {
+        policy: 'allow',
+        type: 'port',
+        value: '443'
+      },
+      {
         policy: 'deny',
         type: 'ipRange',
         value: '10.11.12.00/24'
+      },
+      {
+        policy: 'allow',
+        type: 'ipRange',
+        value: '192.168.1.0/24'
       }
     ] as Layer7FirewallRule[];
 
@@ -1709,11 +1760,25 @@ export async function updateLayer7FirewallRules(networkId: string, rules: Layer7
   try {
     const { FirewallCache } = await import('@/lib/firewall-cache');
     
-    // For demo purposes, just return the rules
-    // In a real implementation, this would call the Meraki API
     console.log(`Updating Layer 7 firewall rules for network ${networkId}:`, rules);
     
-    // Update cache with new rules
+    // Check if we have Meraki API access
+    if (process.env.MERAKI_API_KEY) {
+      try {
+        const merakiApi = new MerakiAPI(process.env.MERAKI_API_KEY);
+        const updatedRules = await merakiApi.updateFirewallL7Rules(networkId, rules);
+        
+        // Update cache with new rules
+        await FirewallCache.setLayer7Rules(networkId, updatedRules);
+        
+        return updatedRules;
+      } catch (apiError) {
+        console.error('Error updating via Meraki API, updating cache only:', apiError);
+      }
+    }
+    
+    // Fallback: update cache only if API is not available
+    console.log('Updating Layer 7 firewall rules cache only (no live API)');
     await FirewallCache.setLayer7Rules(networkId, rules);
     
     return rules;
@@ -1734,38 +1799,60 @@ export async function getContentFilteringRules(networkId: string): Promise<Conte
       return cachedRules;
     }
 
-    console.log(`Fetching content filtering rules for ${networkId} from API (cache miss)`);
+    console.log(`Fetching content filtering rules for ${networkId} from Meraki API (cache miss)`);
     
-    // For demo purposes, return mock data
-    // In a real implementation, this would call the Meraki API
+    // Check if we have Meraki API access
+    if (process.env.MERAKI_API_KEY) {
+      try {
+        const merakiApi = new MerakiAPI(process.env.MERAKI_API_KEY);
+        const response = await merakiApi.getContentFilteringRules(networkId);
+        
+        // The Meraki API should return the content filtering object directly
+        const rules = response as ContentFilteringRule;
+        
+        // Cache the results
+        await FirewallCache.setContentFiltering(networkId, rules);
+        
+        return rules;
+      } catch (apiError) {
+        console.error('Error fetching from Meraki API, falling back to mock data:', apiError);
+      }
+    }
+    
+    // Fallback to mock data if API is not available or fails
+    console.log('Using mock content filtering rules data');
     const rules = {
-      id: networkId,
-      name: 'Default Content Filter',
-      categories: [
-        'Social Networking',
-        'Adult Content',
-        'Gaming'
+      allowedUrlPatterns: [
+        "http://www.example.org",
+        "http://help.com.au"
       ],
-      blockedSites: [
-        'facebook.com',
-        'twitter.com',
-        'youtube.com',
-        'netflix.com',
-        'twitch.tv'
+      blockedUrlPatterns: [
+        "http://www.example.com",
+        "http://www.betting.com",
+        "facebook.com",
+        "twitter.com",
+        "youtube.com"
       ],
-      allowedSites: [],
-      safeSearch: {
-        google: true,
-        bing: true,
-        youtube: true
-      },
-      advancedOptions: {
-        blockMalware: true,
-        blockPhishing: true,
-        httpsInspection: false
-      },
-      enabled: true
-    };
+      blockedUrlCategories: [
+        {
+          id: "meraki:contentFiltering/category/1",
+          name: "Real Estate"
+        },
+        {
+          id: "meraki:contentFiltering/category/7", 
+          name: "Shopping"
+        },
+        {
+          id: "meraki:contentFiltering/category/14",
+          name: "Social Networking"
+        },
+        {
+          id: "meraki:contentFiltering/category/23",
+          name: "Adult Content"
+        }
+      ],
+      urlCategoryListSize: "topSites"
+    } as ContentFilteringRule;
 
     // Cache the results
     await FirewallCache.setContentFiltering(networkId, rules);
@@ -1781,11 +1868,25 @@ export async function updateContentFilteringRules(networkId: string, rules: Cont
   try {
     const { FirewallCache } = await import('@/lib/firewall-cache');
     
-    // For demo purposes, just return the rules
-    // In a real implementation, this would call the Meraki API
     console.log(`Updating content filtering rules for network ${networkId}:`, rules);
     
-    // Update cache with new rules
+    // Check if we have Meraki API access
+    if (process.env.MERAKI_API_KEY) {
+      try {
+        const merakiApi = new MerakiAPI(process.env.MERAKI_API_KEY);
+        const updatedRules = await merakiApi.updateContentFilteringRules(networkId, rules);
+        
+        // Update cache with new rules
+        await FirewallCache.setContentFiltering(networkId, updatedRules);
+        
+        return updatedRules;
+      } catch (apiError) {
+        console.error('Error updating via Meraki API, updating cache only:', apiError);
+      }
+    }
+    
+    // Fallback: update cache only if API is not available
+    console.log('Updating content filtering rules cache only (no live API)');
     await FirewallCache.setContentFiltering(networkId, rules);
     
     return rules;

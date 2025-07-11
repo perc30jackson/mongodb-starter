@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Network, Settings, Activity, Zap } from 'lucide-react';
+import { Network, Settings, Activity, Zap, ExternalLink } from 'lucide-react';
 import { getNetworkDevices, getSwitchPorts, NetworkProps } from '@/lib/api/network';
 import Breadcrumb from '@/components/breadcrumb';
 
@@ -30,9 +30,18 @@ export default function SwitchPage({ network, devices, switchPorts }: SwitchPage
             Configure and monitor MS switches for {network.name}
           </p>
         </div>
-        <Button onClick={() => router.back()} variant="outline">
-          Back to Network
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => window.open(network.url, '_blank')}
+            variant="outline"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Manage in Meraki
+          </Button>
+          <Button onClick={() => router.back()} variant="outline">
+            Back to Network
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="devices" className="space-y-4">

@@ -82,51 +82,86 @@ export default function OrganizationsPage() {
   const [statsError, setStatsError] = useState<string | null>(null);
   
   useEffect(() => {
-    const fetchCachedStats = async () => {
+    const fetchOrganizationStats = async () => {
       if (organizationIds.length === 0) return;
       
       setStatsLoading(true);
       setStatsError(null);
-      const stats: Record<string, { networks: number; devices: number; clients: number }> = {};
       
-      // Try to get cached organization details for each org
-      for (const orgId of organizationIds) {
-        try {
-          // First, try to get from cache without making new API calls
-          const response = await fetch(`/api/debug/cache?key=organization-details-${orgId}`);
-          
-          if (response.ok) {
-            const cacheData = await response.json();
-            if (cacheData.data) {
-              const orgData = cacheData.data;
-              stats[orgId] = {
-                networks: orgData?.networks?.length || 0,
-                devices: orgData?.devices?.length || 0,
-                clients: orgData?.stats?.totalClients || 0
+      try {
+        // Fetch stats for all organizations in parallel (much faster)
+        const statsPromises = organizationIds.map(async (orgId) => {
+          try {
+            // Use the new lightweight stats endpoint
+            const statsResponse = await fetch(`/api/organization/${orgId}/stats`);
+            
+            if (statsResponse.ok) {
+              const orgStats = await statsResponse.json();
+              return {
+                orgId,
+                stats: {
+                  networks: orgStats.networks || 0,
+                  devices: orgStats.devices || 0,
+                  clients: orgStats.clients || 0
+                }
               };
             } else {
-              // No cached data, use default values
-              stats[orgId] = { networks: 0, devices: 0, clients: 0 };
+              // If stats endpoint fails, try to get networks count only
+              const networksResponse = await fetch(`/api/organization/${orgId}?action=networks`);
+              
+              if (networksResponse.ok) {
+                const networks = await networksResponse.json();
+                return {
+                  orgId,
+                  stats: {
+                    networks: networks?.length || 0,
+                    devices: 0,
+                    clients: 0
+                  }
+                };
+              } else {
+                // Complete fallback
+                return {
+                  orgId,
+                  stats: { networks: 0, devices: 0, clients: 0 }
+                };
+              }
             }
-          } else {
-            // Cache miss or error, use default values
-            stats[orgId] = { networks: 0, devices: 0, clients: 0 };
+          } catch (error) {
+            console.warn(`Failed to get stats for ${orgId}:`, error);
+            return {
+              orgId,
+              stats: { networks: 0, devices: 0, clients: 0 }
+            };
           }
-        } catch (error) {
-          console.warn(`Failed to get cached stats for ${orgId}:`, error);
-          stats[orgId] = { networks: 0, devices: 0, clients: 0 };
-        }
+        });
+        
+        // Wait for all requests to complete
+        const results = await Promise.all(statsPromises);
+        
+        // Convert results to stats object
+        const stats: Record<string, { networks: number; devices: number; clients: number }> = {};
+        results.forEach(({ orgId, stats: orgStats }) => {
+          stats[orgId] = orgStats;
+        });
+        
+        setOrganizationStats(stats);
+      } catch (error) {
+        console.error('Error fetching organization stats:', error);
+        setStatsError('Failed to load organization statistics');
       }
       
-      setOrganizationStats(stats);
       setStatsLoading(false);
     };
     
-    fetchCachedStats();
+    fetchOrganizationStats();
   }, [organizationIds]);
   
-  const loading = organizationsLoading || statsLoading;
+  const loading = organizationsLoading;
   const error = organizationsError || statsError;
+
+  // Show progress indicator when loading stats
+  const showStatsLoading = statsLoading && !organizationsLoading;
 
   const handleOrganizationSelect = (organizationId: string) => {
     setSelectedOrganization(organizationId);
@@ -185,7 +220,7 @@ export default function OrganizationsPage() {
               <Badge variant="outline" className="text-sm">
                 {safeOrganizations.length} organization{safeOrganizations.length !== 1 ? 's' : ''}
               </Badge>
-              <Link href="/">
+              <Link href="/networks">
                 <Button variant="outline">
                   <Network className="h-4 w-4 mr-2" />
                   View Networks
@@ -219,9 +254,19 @@ export default function OrganizationsPage() {
             </TabsList>
 
             <TabsContent value="overview">
+              {showStatsLoading && (
+                <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    Loading organization statistics...
+                  </div>
+                </div>
+              )}
+              
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {safeOrganizations.map((org) => {
                   const stats = organizationStats[org.id] || { networks: 0, devices: 0, clients: 0 };
+                  const hasStats = organizationStats[org.id] !== undefined;
                   
                   return (
                     <Card 
@@ -245,11 +290,19 @@ export default function OrganizationsPage() {
                       <CardContent>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-primary">{stats.networks}</div>
+                            <div className="text-2xl font-bold text-primary">
+                              {hasStats ? stats.networks : (
+                                <div className="animate-pulse bg-muted rounded w-8 h-8 mx-auto"></div>
+                              )}
+                            </div>
                             <div className="text-sm text-muted-foreground">Networks</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-primary">{stats.devices}</div>
+                            <div className="text-2xl font-bold text-primary">
+                              {hasStats ? stats.devices : (
+                                <div className="animate-pulse bg-muted rounded w-8 h-8 mx-auto"></div>
+                              )}
+                            </div>
                             <div className="text-sm text-muted-foreground">Devices</div>
                           </div>
                         </div>
@@ -278,7 +331,11 @@ export default function OrganizationsPage() {
                         <div className="mt-4 pt-4 border-t">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">Total Clients</span>
-                            <span className="font-medium">{stats.clients}</span>
+                            <span className="font-medium">
+                              {hasStats ? stats.clients : (
+                                <div className="animate-pulse bg-muted rounded w-12 h-4"></div>
+                              )}
+                            </span>
                           </div>
                         </div>
                       </CardContent>

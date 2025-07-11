@@ -42,8 +42,10 @@ export const getStaticProps: GetStaticProps = async () => {
     await clientPromise;
     
     try {
-      // Sync networks from Meraki API if we have an API key
-      if (process.env.MERAKI_API_KEY) {
+      // Only sync networks from Meraki API periodically (not on every revalidation)
+      // to improve performance. Sync will happen in background via API calls instead.
+      if (process.env.MERAKI_API_KEY && Math.random() < 0.1) { // 10% chance to sync
+        console.log('Running periodic network sync...');
         await syncNetworksFromMeraki();
       }
     } catch (error) {
@@ -77,6 +79,6 @@ export const getStaticProps: GetStaticProps = async () => {
       totalNetworks: totalNetworks || 0,
       selectedNetwork: selectedNetwork || null
     },
-    revalidate: 60 // Revalidate every minute
+    revalidate: 300 // Revalidate every 5 minutes instead of 1 minute to improve performance
   };
 };

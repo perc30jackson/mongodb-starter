@@ -96,12 +96,12 @@ export function FirewallCacheMonitor({ networkId }: { networkId: string }) {
   }
 
   return (
-    <Card className="border-blue-200 bg-blue-50/50">
+    <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Database className="w-5 h-5 text-blue-600" />
+              <Database className="w-5 h-5" />
               Firewall Cache Monitor
             </CardTitle>
             <CardDescription>
@@ -121,19 +121,19 @@ export function FirewallCacheMonitor({ networkId }: { networkId: string }) {
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.firewallRules}</div>
+            <div className="text-2xl font-bold">{stats.firewallRules}</div>
             <div className="text-sm text-muted-foreground">Firewall Rules</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.layer7Rules}</div>
+            <div className="text-2xl font-bold">{stats.layer7Rules}</div>
             <div className="text-sm text-muted-foreground">Layer 7 Rules</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.contentFiltering}</div>
+            <div className="text-2xl font-bold">{stats.contentFiltering}</div>
             <div className="text-sm text-muted-foreground">Content Filters</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-600">{stats.totalEntries}</div>
+            <div className="text-2xl font-bold">{stats.totalEntries}</div>
             <div className="text-sm text-muted-foreground">Total Cached</div>
           </div>
         </div>

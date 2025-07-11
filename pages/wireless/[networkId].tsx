@@ -19,7 +19,8 @@ import {
   EyeOff,
   Lock,
   Unlock,
-  BarChart3
+  BarChart3,
+  ExternalLink
 } from 'lucide-react';
 import Breadcrumb from '@/components/breadcrumb';
 
@@ -187,9 +188,18 @@ export default function WirelessPage() {
               <h1 className="text-3xl font-bold">Wireless Management</h1>
             </div>
           </div>
-          <Badge variant="outline" className="text-sm">
-            Network: {networkId}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => window.open(`https://dashboard.meraki.com/n/${networkId}/manage/configure/overview`, '_blank')}
+              variant="outline"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Manage in Meraki
+            </Button>
+            <Badge variant="outline" className="text-sm">
+              Network: {networkId}
+            </Badge>
+          </div>
         </div>
 
         <Tabs defaultValue="ssids" className="space-y-6">

@@ -1,5 +1,26 @@
 import { NetworkProps } from '@/lib/api/network';
 import { useState } from 'react';
+import { Building2, Warehouse, MapPin, Network } from 'lucide-react';
+
+// Function to determine the appropriate icon based on network tags and ID
+function getNetworkIcon(network: NetworkProps) {
+  // Check if network ID indicates field office (L followed by numbers)
+  if (/^L\d+/.test(network.id)) {
+    return Building2;
+  }
+  
+  // Check tags for specific types
+  if (network.tags.some(tag => tag.toLowerCase() === 'regional')) {
+    return MapPin;
+  }
+  
+  if (network.tags.some(tag => tag.toLowerCase() === 'garage')) {
+    return Warehouse;
+  }
+  
+  // Default icon
+  return Network;
+}
 
 export default function NetworkDirectoryResults({
   networks,
@@ -46,11 +67,14 @@ export default function NetworkDirectoryResults({
             onClick={() => onNetworkSelect(network)}
           >
             <div className="flex-shrink-0">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {network.name.charAt(0).toUpperCase()}
-                </span>
-              </div>
+              {(() => {
+                const IconComponent = getNetworkIcon(network);
+                return (
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 flex items-center justify-center">
+                    <IconComponent className="h-5 w-5 text-white" />
+                  </div>
+                );
+              })()}
             </div>
             <div className="flex-1 min-w-0">
               <div className="focus:outline-none">

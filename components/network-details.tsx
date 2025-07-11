@@ -6,7 +6,7 @@ import { LoadingDots } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { Shield, Router, Wifi } from 'lucide-react';
+import { Shield, Router, Wifi, ExternalLink } from 'lucide-react';
 import Breadcrumb from '@/components/breadcrumb';
 import { DeviceTable } from '@/components/device-table';
 import { ClientTable } from '@/components/client-table';
@@ -100,17 +100,31 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
       <div className="bg-gradient-to-r from-primary/80 to-primary px-6 py-8">
         <div className="max-w-7xl mx-auto">
           <Breadcrumb />
-          <h1 className="text-3xl font-bold text-primary-foreground">{network.name}</h1>
-          <p className="text-primary-foreground/80 mt-2">Network ID: {network.id}</p>
-          <div className="flex flex-wrap gap-2 mt-4">
-            {network.productTypes.map((type, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-primary-foreground"
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-primary-foreground">{network.name}</h1>
+              <p className="text-primary-foreground/80 mt-2">Network ID: {network.id}</p>
+              <div className="flex flex-wrap gap-2 mt-4">
+                {network.productTypes.map((type, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-primary-foreground"
+                  >
+                    {type}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex-shrink-0">
+              <Button
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-primary-foreground border-white/20"
+                onClick={() => window.open(network.url, '_blank')}
               >
-                {type}
-              </span>
-            ))}
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Manage in Meraki
+              </Button>
+            </div>
           </div>
         </div>
       </div>

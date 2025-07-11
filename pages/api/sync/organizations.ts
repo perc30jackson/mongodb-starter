@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const organizations = await meraki.getOrganizations();
-    await cache.set(cacheKeys.organizations(), organizations, 'organizations');
+    await cache.set(cacheKeys.organizations(), organizations, { type: 'organizations' });
     
     sendProgress({ 
       status: 'progress', 
@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           networks: networks || []
         };
         
-        await cache.set(cacheKeys.organizationDetails(org.id), orgDetails, 'organization-details');
+        await cache.set(cacheKeys.organizationDetails(org.id), orgDetails, { type: 'organization-details' });
         
         sendProgress({ 
           status: 'progress', 
@@ -103,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           try {
             const devices = await meraki.getNetworkDevices(network.id);
-            await cache.set(cacheKeys.networkDevices(network.id), devices || [], 'network-devices');
+            await cache.set(cacheKeys.networkDevices(network.id), devices || [], { type: 'network-devices' });
             
             sendProgress({ 
               status: 'progress', 

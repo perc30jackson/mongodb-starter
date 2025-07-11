@@ -7,7 +7,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get cache statistics
+    const { key, type } = req.query;
+    
+    // If key and type are provided, try to get specific cache entry
+    if (key && type) {
+      const data = await cache.get(key as string, type as string);
+      return res.status(200).json({
+        key,
+        type,
+        data,
+        found: data !== null,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // Otherwise, get cache statistics
     const stats = await cache.getStats();
     
     res.status(200).json({

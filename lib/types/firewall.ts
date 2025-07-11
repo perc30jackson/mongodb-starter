@@ -50,8 +50,8 @@ export interface FirewallRule {
 // Meraki Layer 7 Firewall Rule interface based on official API
 export interface Layer7FirewallRule {
   policy: 'deny' | 'allow';
-  type: 'application' | 'applicationCategory' | 'host' | 'port' | 'ipRange';
-  value?: string;
+  type: 'application' | 'applicationCategory' | 'host' | 'port' | 'ipRange' | 'blockedCountries';
+  value?: string | string[]; // Allow array for blockedCountries
   valueObj?: {
     id?: string;
     name?: string;
@@ -59,27 +59,11 @@ export interface Layer7FirewallRule {
 }
 
 export interface ContentFilteringRule {
-  id?: string;
-  name: string;
-  categories: string[];
-  blockedSites: string[];
-  allowedSites: string[];
-  safeSearch: {
-    google: boolean;
-    bing: boolean;
-    youtube: boolean;
-  };
-  advancedOptions: {
-    blockMalware: boolean;
-    blockPhishing: boolean;
-    httpsInspection: boolean;
-  };
-  schedule?: {
-    timeRange?: {
-      start: string;
-      end: string;
-      days: string[];
-    };
-  };
-  enabled: boolean;
+  allowedUrlPatterns: string[];
+  blockedUrlPatterns: string[];
+  blockedUrlCategories: Array<{
+    id: string;
+    name: string;
+  }>;
+  urlCategoryListSize: 'topSites' | 'fullList';
 }

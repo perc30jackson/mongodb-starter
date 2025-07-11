@@ -169,8 +169,14 @@ export function DeviceTable({
             variant="outline"
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/device/${device.serial}`);
+              // For Security Appliances, redirect to firewall page
+              if (device.productType === 'appliance') {
+                router.push(`/firewall/${device.networkId}`);
+              } else {
+                router.push(`/device/${device.serial}`);
+              }
             }}
+            title={device.productType === 'appliance' ? 'View Firewall Settings' : 'View Device Details'}
           >
             View
           </Button>
