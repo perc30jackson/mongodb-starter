@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Building2, Network, ChevronDown, Globe, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function Navbar({
   setSidebarOpen
@@ -23,7 +24,7 @@ export default function Navbar({
 
   return (
     <nav
-      className="absolute right-0 w-full flex items-center justify-between md:justify-end px-4 h-16"
+      className="absolute right-0 w-full flex items-center justify-between md:justify-end px-4 h-16 border-b border-color-border-200 bg-color-background-100"
       aria-label="Navbar"
     >
       <button
@@ -73,8 +74,11 @@ export default function Navbar({
           </Button>
         </div>
         
-        <div className="text-sm text-muted-foreground">
-          Cisco Meraki Network Manager
+        <div className="flex items-center space-x-4">
+          <div className="text-sm text-color-text-300">
+            Cisco Meraki Network Manager
+          </div>
+          <ThemeToggle />
         </div>
       </div>
     </nav>

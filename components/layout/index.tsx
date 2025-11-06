@@ -30,8 +30,8 @@ export default function Layout({
 
   if (router.isFallback) {
     return (
-      <div className="h-screen w-screen flex justify-center items-center bg-black">
-        <LoadingDots color="white" />
+      <div className="h-screen w-screen flex justify-center items-center bg-color-background-100">
+        <LoadingDots color="rgb(var(--color-text-100))" />
       </div>
     );
   }
@@ -42,7 +42,7 @@ export default function Layout({
   }
 
   return (
-    <div className="w-full mx-auto h-screen flex overflow-hidden bg-black">
+    <div className="w-full mx-auto h-screen flex overflow-hidden bg-color-background-100">
       <Meta props={meta} />
       <Toast username={username} />
       <Sidebar
@@ -54,7 +54,7 @@ export default function Layout({
 
       <div className="flex flex-col min-w-0 flex-1 overflow-hidden">
         <div className="flex-1 relative z-0 flex overflow-hidden">
-          <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none xl:order-last">
+          <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none xl:order-last bg-color-background-100">
             {/* Navbar */}
             <Navbar setSidebarOpen={setSidebarOpen} />
 

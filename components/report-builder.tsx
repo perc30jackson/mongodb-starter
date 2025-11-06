@@ -133,6 +133,7 @@ const DATA_SOURCES = [
       { name: 'model', type: 'string', label: 'Model' },
       { name: 'productType', type: 'string', label: 'Product Type' },
       { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'status', type: 'string', label: 'Status' },
       { name: 'firmware', type: 'string', label: 'Firmware Version' },
       { name: 'lanIp', type: 'string', label: 'LAN IP' },
@@ -168,6 +169,8 @@ const DATA_SOURCES = [
       { name: 'name', type: 'string', label: 'Device Name' },
       { name: 'model', type: 'string', label: 'Model' },
       { name: 'productType', type: 'string', label: 'Product Type' },
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'firmware', type: 'string', label: 'Firmware' },
       { name: 'lanIp', type: 'string', label: 'LAN IP' },
       { name: 'wan1Ip', type: 'string', label: 'WAN IP' },
@@ -182,6 +185,8 @@ const DATA_SOURCES = [
     description: 'Layer 3 firewall rules',
     endpoint: '/api/firewall/[networkId]',
     fields: [
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'comment', type: 'string', label: 'Rule Comment' },
       { name: 'policy', type: 'string', label: 'Policy' },
       { name: 'protocol', type: 'string', label: 'Protocol' },
@@ -199,6 +204,8 @@ const DATA_SOURCES = [
     description: 'Application-based firewall rules',
     endpoint: '/api/firewall/layer7/[networkId]',
     fields: [
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'comment', type: 'string', label: 'Rule Comment' },
       { name: 'policy', type: 'string', label: 'Policy' },
       { name: 'applications', type: 'array', label: 'Applications' },
@@ -214,6 +221,8 @@ const DATA_SOURCES = [
     description: 'Content filtering rules and settings',
     endpoint: '/api/firewall/content-filtering/[networkId]',
     fields: [
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'name', type: 'string', label: 'Filter Name' },
       { name: 'categories', type: 'array', label: 'Blocked Categories' },
       { name: 'blockedSites', type: 'array', label: 'Blocked Sites' },
@@ -284,6 +293,8 @@ const DATA_SOURCES = [
     description: 'Connected clients and usage data',
     endpoint: '/api/network/[networkId]/clients',
     fields: [
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
       { name: 'id', type: 'string', label: 'Client ID' },
       { name: 'mac', type: 'string', label: 'MAC Address' },
       { name: 'description', type: 'string', label: 'Description' },
@@ -294,6 +305,54 @@ const DATA_SOURCES = [
       { name: 'status', type: 'string', label: 'Status' },
       { name: 'firstSeen', type: 'date', label: 'First Seen' },
       { name: 'lastSeen', type: 'date', label: 'Last Seen' }
+    ]
+  },
+  {
+    id: 'policy-objects',
+    name: 'Policy Objects',
+    icon: Shield,
+    description: 'Organization-level policy objects (IPs, FQDNs, ports, etc.)',
+    endpoint: '/api/organization/[organizationId]/policyObjects',
+    fields: [
+      { name: 'organizationId', type: 'string', label: 'Organization ID' },
+      { name: 'id', type: 'string', label: 'Policy Object ID' },
+      { name: 'name', type: 'string', label: 'Name' },
+      { name: 'category', type: 'string', label: 'Category' },
+      { name: 'type', type: 'string', label: 'Type' },
+      { name: 'cidr', type: 'string', label: 'CIDR' },
+      { name: 'fqdn', type: 'string', label: 'FQDN' },
+      { name: 'mask', type: 'string', label: 'Mask' },
+      { name: 'groupIds', type: 'array', label: 'Group IDs' }
+    ]
+  },
+  {
+    id: 'policy-object-groups',
+    name: 'Policy Object Groups',
+    icon: Shield,
+    description: 'Organization-level policy object groups',
+    endpoint: '/api/organization/[organizationId]/policyObjects/groups',
+    fields: [
+      { name: 'organizationId', type: 'string', label: 'Organization ID' },
+      { name: 'id', type: 'string', label: 'Group ID' },
+      { name: 'name', type: 'string', label: 'Name' },
+      { name: 'category', type: 'string', label: 'Category' },
+      { name: 'objectIds', type: 'array', label: 'Object IDs' }
+    ]
+  },
+  {
+    id: 'lockdown-report',
+    name: 'Lockdown Report',
+    icon: Shield,
+    description: 'Analyze firewall rules to identify networks with deny-all rules',
+    endpoint: '/api/reports/lockdown',
+    fields: [
+      { name: 'organizationId', type: 'string', label: 'Organization ID' },
+      { name: 'organizationName', type: 'string', label: 'Organization Name' },
+      { name: 'networkId', type: 'string', label: 'Network ID' },
+      { name: 'networkName', type: 'string', label: 'Network Name' },
+      { name: 'hasDenyAllRule', type: 'boolean', label: 'Has Deny-All Rule' },
+      { name: 'lastRulePolicy', type: 'string', label: 'Last Rule Policy' },
+      { name: 'lastRuleComment', type: 'string', label: 'Last Rule Comment' }
     ]
   }
 ];
@@ -423,9 +482,9 @@ export default function ReportBuilder() {
     setIsGenerating(true);
     setReportError(null);
     setCurrentView('loading');
-    
+
     const startTime = new Date();
-    
+
     try {
       // Phase 1: Validating configuration
       setReportProgress({
@@ -434,9 +493,9 @@ export default function ReportBuilder() {
         percentage: 10,
         startTime
       });
-      
+
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate validation time
-      
+
       // Phase 2: Fetching data
       const estimatedRequests = reportConfig.selectedOrgs.length * 3; // Estimate: org details + networks + devices per org
       setReportProgress({
@@ -448,7 +507,7 @@ export default function ReportBuilder() {
         completedRequests: 0,
         currentRequest: 'Organizations'
       });
-      
+
       // Simulate progressive request updates
       const updateRequestProgress = (current: string, completed: number) => {
         setReportProgress({
@@ -461,17 +520,19 @@ export default function ReportBuilder() {
           currentRequest: current
         });
       };
-      
+
       // Simulate some request updates
       await new Promise(resolve => setTimeout(resolve, 200));
       updateRequestProgress('Organization details', Math.floor(estimatedRequests * 0.3));
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
       updateRequestProgress('Network configurations', Math.floor(estimatedRequests * 0.6));
-      
+
       await new Promise(resolve => setTimeout(resolve, 200));
       updateRequestProgress('Device inventories', Math.floor(estimatedRequests * 0.9));
-      
+
+      console.log('Sending report config to backend:', JSON.stringify(reportConfig, null, 2));
+
       const response = await fetch('/api/reports/generate', {
         method: 'POST',
         headers: {
@@ -479,11 +540,11 @@ export default function ReportBuilder() {
         },
         body: JSON.stringify(reportConfig),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       // Phase 3: Processing data
       setReportProgress({
         phase: 'filtering',
@@ -491,18 +552,197 @@ export default function ReportBuilder() {
         percentage: 60,
         startTime
       });
-      
+
       await new Promise(resolve => setTimeout(resolve, 300)); // Simulate processing time
-      
+
       setReportProgress({
         phase: 'processing',
         message: 'Processing and formatting results...',
         percentage: 80,
         startTime
       });
-      
-      const data = await response.json();
-      
+
+      let data = await response.json();
+
+      // --- BEGIN: Translate networkId and GRP/OBJ values ---
+      // Helper: fetch all networks for mapping
+      const fetchNetworkMap = async () => {
+        const allNetworks: any[] = [];
+        for (const orgId of reportConfig.selectedOrgs) {
+          const resp = await fetch(`/api/organization/${orgId}?action=networks`);
+          if (resp.ok) {
+            const nets = await resp.json();
+            allNetworks.push(...nets);
+          }
+        }
+        // Map: networkId -> networkName
+        const map: Record<string, string> = {};
+        allNetworks.forEach(net => {
+          map[net.id] = net.name;
+        });
+        return map;
+      };
+
+      // Organization caches to ensure single API call per org
+      let organizationCaches: Map<string, { groups: Record<string, string>, objects: Record<string, string> }> = new Map();
+
+      // Helper: Build caches for all organizations upfront
+      const buildOrganizationCaches = async () => {
+        console.log(`Frontend: Building caches for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
+        
+        for (const orgId of reportConfig.selectedOrgs) {
+          if (organizationCaches.has(orgId)) {
+            console.log(`Frontend: Cache already exists for org ${orgId}, skipping`);
+            continue;
+          }
+
+          const orgCache: { groups: Record<string, string>, objects: Record<string, string> } = { 
+            groups: {}, 
+            objects: {} 
+          };
+          
+          try {
+            // Fetch groups for this organization
+            console.log(`Frontend: Fetching groups for organization ${orgId}`);
+            const groupResp = await fetch(`/api/organization/${orgId}/policyObjects/groups`);
+            if (groupResp.ok) {
+              const groups = await groupResp.json();
+              if (Array.isArray(groups)) {
+                console.log(`Frontend: Loaded ${groups.length} groups for org ${orgId}`);
+                groups.forEach((group: any) => {
+                  orgCache.groups[group.id] = group.name;
+                });
+              }
+            }
+          } catch (error) {
+            console.log(`Frontend: Failed to fetch groups for org ${orgId}:`, error);
+          }
+
+          try {
+            // Fetch objects for this organization
+            console.log(`Frontend: Fetching objects for organization ${orgId}`);
+            const objectResp = await fetch(`/api/organization/${orgId}/policyObjects`);
+            if (objectResp.ok) {
+              const objects = await objectResp.json();
+              if (Array.isArray(objects)) {
+                console.log(`Frontend: Loaded ${objects.length} objects for org ${orgId}`);
+                objects.forEach((obj: any) => {
+                  orgCache.objects[obj.id] = obj.name;
+                });
+              }
+            }
+          } catch (error) {
+            console.log(`Frontend: Failed to fetch objects for org ${orgId}:`, error);
+          }
+
+          organizationCaches.set(orgId, orgCache);
+          console.log(`Frontend: Completed cache for org ${orgId} - Groups: ${Object.keys(orgCache.groups).length}, Objects: ${Object.keys(orgCache.objects).length}`);
+        }
+        
+        console.log(`Frontend: Cache building complete for ${organizationCaches.size} organizations`);
+      };
+
+      // Helper: Look up value in all organization caches
+      const lookupInCaches = (id: string, type: 'groups' | 'objects'): string | null => {
+        for (const [orgId, cache] of organizationCaches.entries()) {
+          if (cache[type][id]) {
+            console.log(`Frontend: Found ${type.slice(0, -1)} translation in org ${orgId}: ${id} -> ${cache[type][id]}`);
+            return cache[type][id];
+          }
+        }
+        return null;
+      };
+
+      // Helper: translate GRP/OBJ values
+      const translateSpecialValue = async (value: string) => {
+        if (typeof value !== 'string') return value;
+        
+        // Check if value contains comma-separated GRP/OBJ values
+        if (value.includes(',') && (value.includes('GRP(') || value.includes('OBJ('))) {
+          console.log(`Frontend: Processing comma-separated values: ${value}`);
+          
+          // Split by comma and process each part
+          const parts = value.split(',').map(part => part.trim());
+          const translatedParts: string[] = [];
+          
+          for (const part of parts) {
+            const translatedPart = await translateSpecialValue(part); // Recursive call for individual parts
+            translatedParts.push(translatedPart);
+          }
+          
+          const result = translatedParts.join(', ');
+          console.log(`Frontend: Comma-separated translation result: ${result}`);
+          return result;
+        }
+        
+        // Handle Group references (GRP(...))
+        const grpMatch = value.match(/^GRP\(([^)]+)\)$/);
+        if (grpMatch) {
+          const groupId = grpMatch[1];
+          console.log(`Frontend: Extracting group ID from ${value}: ${groupId}`);
+          
+          const translatedName = lookupInCaches(groupId, 'groups');
+          if (translatedName) {
+            console.log(`Frontend: Found group translation: ${value} -> ${translatedName}`);
+            return translatedName;
+          }
+        }
+        
+        // Handle Object references (OBJ(...))
+        const objMatch = value.match(/^OBJ\(([^)]+)\)$/);
+        if (objMatch) {
+          const objectId = objMatch[1];
+          console.log(`Frontend: Extracting object ID from ${value}: ${objectId}`);
+          
+          const translatedName = lookupInCaches(objectId, 'objects');
+          if (translatedName) {
+            console.log(`Frontend: Found object translation: ${value} -> ${translatedName}`);
+            return translatedName;
+          }
+        }
+        
+        return value; // Return original if no translation found
+      };
+
+      // Build caches upfront
+      await buildOrganizationCaches();
+
+      // Only process if preview/data exists
+      if (Array.isArray(data.preview)) {
+        // Always fetch network map for any report
+        const networkMap = await fetchNetworkMap();
+        
+        data.preview = await Promise.all(
+          data.preview.map(async (row: any) => {
+            // 1. Translate networkId to networkName (if networkId exists)
+            if (row.networkId && !row.networkName) {
+              row.networkName = networkMap[row.networkId] || row.networkId;
+            }
+            
+            // 2. Translate GRP/OBJ values in all fields
+            for (const key of Object.keys(row)) {
+              if (typeof row[key] === 'string' && (row[key].startsWith('GRP') || row[key].startsWith('OBJ'))) {
+                console.log(`Translating ${key}: ${row[key]}`);
+                row[key] = await translateSpecialValue(row[key]);
+                console.log(`Translated to: ${row[key]}`);
+              }
+            }
+            return row;
+          })
+        );
+
+        // Auto-add networkName to columns if networkId is present but networkName is not
+        if (data.preview.some((row: any) => row.networkId) && 
+            reportConfig.columns.includes('networkId') && 
+            !reportConfig.columns.includes('networkName')) {
+          setReportConfig(prev => ({
+            ...prev,
+            columns: [...prev.columns, 'networkName']
+          }));
+        }
+      }
+      // --- END: Translate networkId and GRP/OBJ values ---
+
       // Phase 4: Completed
       const endTime = new Date();
       setReportProgress({
@@ -517,13 +757,13 @@ export default function ReportBuilder() {
         completedRequests: estimatedRequests,
         currentRequest: 'All requests completed'
       });
-      
+
       // Store the reportId for later use
       setReportId(data.reportId);
-      
+
       console.log('Report data received:', data);
       console.log('Preview data:', data.preview);
-      
+
       // Transform the preview to match our structure
       const reportResults: ReportResults = {
         data: data.preview || [],
@@ -542,15 +782,15 @@ export default function ReportBuilder() {
           preview: data.preview || []
         }
       };
-      
+
       console.log('Report results set:', reportResults);
       setReportResults(reportResults);
-      
+
       // Auto-transition to results after a short delay
       setTimeout(() => {
         setCurrentView('results');
       }, 1500);
-      
+
     } catch (error) {
       console.error('Error generating report:', error);
       const endTime = new Date();
@@ -618,37 +858,44 @@ export default function ReportBuilder() {
   };
 
   // Loading Page Component
-  const LoadingPage = () => (
-    <div className="container mx-auto p-6">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            Generating Report
-          </CardTitle>
-          <CardDescription>
-            Please wait while we process your request...
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {reportProgress && (
-            <>
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="capitalize font-medium">{reportProgress.phase}</span>
-                  <span>{reportProgress.percentage}%</span>
+  const LoadingPage = () => {
+    const progressBarRef = React.useRef<HTMLDivElement>(null);
+    const percentage = reportProgress ? Math.min(100, Math.max(0, reportProgress.percentage || 0)) : 0;
+
+    React.useEffect(() => {
+      if (progressBarRef.current) {
+        progressBarRef.current.style.setProperty('--progress-width', `${percentage}%`);
+      }
+    }, [percentage]);
+
+    return (
+      <div className="container mx-auto p-6">
+        <Card className="max-w-2xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Loader2 className="w-6 h-6 animate-spin" />
+              Generating Report
+            </CardTitle>
+            <CardDescription>
+              Please wait while we process your request...
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {reportProgress && (
+              <>
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="capitalize font-medium">{reportProgress.phase}</span>
+                    <span>{reportProgress.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      ref={progressBarRef}
+                      className="bg-blue-600 h-2 rounded-full progress-bar transition-all duration-300"
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full progress-bar transition-all duration-300"
-                    style={{ 
-                      '--progress-width': `${Math.min(100, Math.max(0, reportProgress.percentage || 0))}%`,
-                      width: 'var(--progress-width)' 
-                    } as React.CSSProperties}
-                  />
-                </div>
-              </div>
 
               {/* Progress Message */}
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -728,7 +975,8 @@ export default function ReportBuilder() {
         </CardContent>
       </Card>
     </div>
-  );
+    );
+  };
 
   // Results Page Component
   const ResultsPage = () => {
@@ -742,16 +990,195 @@ export default function ReportBuilder() {
         const fullReport = await response.json();
         
         if (fullReport.success) {
+          let fullData = fullReport.data;
+
+          // Organization caches to ensure single API call per org
+          let organizationCaches: Map<string, { groups: Record<string, string>, objects: Record<string, string> }> = new Map();
+
+          // Helper: Build caches for all organizations upfront
+          const buildOrganizationCaches = async () => {
+            console.log(`LoadData: Building caches for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
+            
+            for (const orgId of reportConfig.selectedOrgs) {
+              if (organizationCaches.has(orgId)) {
+                console.log(`LoadData: Cache already exists for org ${orgId}, skipping`);
+                continue;
+              }
+
+              const orgCache: { groups: Record<string, string>, objects: Record<string, string> } = { 
+                groups: {}, 
+                objects: {} 
+              };
+              
+              try {
+                // Fetch groups for this organization
+                console.log(`LoadData: Fetching groups for organization ${orgId}`);
+                const groupResp = await fetch(`/api/organization/${orgId}/policyObjects/groups`);
+                if (groupResp.ok) {
+                  const groups = await groupResp.json();
+                  if (Array.isArray(groups)) {
+                    console.log(`LoadData: Loaded ${groups.length} groups for org ${orgId}`);
+                    groups.forEach((group: any) => {
+                      orgCache.groups[group.id] = group.name;
+                    });
+                  }
+                }
+              } catch (error) {
+                console.log(`LoadData: Failed to fetch groups for org ${orgId}:`, error);
+              }
+
+              try {
+                // Fetch objects for this organization
+                console.log(`LoadData: Fetching objects for organization ${orgId}`);
+                const objectResp = await fetch(`/api/organization/${orgId}/policyObjects`);
+                if (objectResp.ok) {
+                  const objects = await objectResp.json();
+                  if (Array.isArray(objects)) {
+                    console.log(`LoadData: Loaded ${objects.length} objects for org ${orgId}`);
+                    objects.forEach((obj: any) => {
+                      orgCache.objects[obj.id] = obj.name;
+                    });
+                  }
+                }
+              } catch (error) {
+                console.log(`LoadData: Failed to fetch objects for org ${orgId}:`, error);
+              }
+
+              organizationCaches.set(orgId, orgCache);
+              console.log(`LoadData: Completed cache for org ${orgId} - Groups: ${Object.keys(orgCache.groups).length}, Objects: ${Object.keys(orgCache.objects).length}`);
+            }
+            
+            console.log(`LoadData: Cache building complete for ${organizationCaches.size} organizations`);
+          };
+
+          // Helper: Look up value in all organization caches
+          const lookupInCaches = (id: string, type: 'groups' | 'objects'): string | null => {
+            for (const [orgId, cache] of organizationCaches.entries()) {
+              if (cache[type][id]) {
+                console.log(`LoadData: Found ${type.slice(0, -1)} translation in org ${orgId}: ${id} -> ${cache[type][id]}`);
+                return cache[type][id];
+              }
+            }
+            return null;
+          };
+
+          // Apply the same translations to full data
+          // Helper: fetch all networks for mapping
+          const fetchNetworkMap = async () => {
+            const allNetworks: any[] = [];
+            for (const orgId of reportConfig.selectedOrgs) {
+              const resp = await fetch(`/api/organization/${orgId}?action=networks`);
+              if (resp.ok) {
+                const nets = await resp.json();
+                allNetworks.push(...nets);
+              }
+            }
+            // Map: networkId -> networkName
+            const map: Record<string, string> = {};
+            allNetworks.forEach(net => {
+              map[net.id] = net.name;
+            });
+            return map;
+          };
+
+          // Helper: translate GRP/OBJ values
+          const translateSpecialValue = async (value: string) => {
+            if (typeof value !== 'string') return value;
+            
+            // Check if value contains comma-separated GRP/OBJ values
+            if (value.includes(',') && (value.includes('GRP(') || value.includes('OBJ('))) {
+              console.log(`LoadData: Processing comma-separated values: ${value}`);
+              
+              // Split by comma and process each part
+              const parts = value.split(',').map(part => part.trim());
+              const translatedParts: string[] = [];
+              
+              for (const part of parts) {
+                const translatedPart = await translateSpecialValue(part); // Recursive call for individual parts
+                translatedParts.push(translatedPart);
+              }
+              
+              const result = translatedParts.join(', ');
+              console.log(`LoadData: Comma-separated translation result: ${result}`);
+              return result;
+            }
+            
+            // Handle Group references (GRP(...))
+            const grpMatch = value.match(/^GRP\(([^)]+)\)$/);
+            if (grpMatch) {
+              const groupId = grpMatch[1];
+              console.log(`LoadData: Extracting group ID from ${value}: ${groupId}`);
+              
+              const translatedName = lookupInCaches(groupId, 'groups');
+              if (translatedName) {
+                console.log(`LoadData: Found group translation: ${value} -> ${translatedName}`);
+                return translatedName;
+              }
+            }
+            
+            // Handle Object references (OBJ(...))
+            const objMatch = value.match(/^OBJ\(([^)]+)\)$/);
+            if (objMatch) {
+              const objectId = objMatch[1];
+              console.log(`LoadData: Extracting object ID from ${value}: ${objectId}`);
+              
+              const translatedName = lookupInCaches(objectId, 'objects');
+              if (translatedName) {
+                console.log(`LoadData: Found object translation: ${value} -> ${translatedName}`);
+                return translatedName;
+              }
+            }
+            
+            return value; // Return original if no translation found
+          };
+
+          // Build caches upfront
+          await buildOrganizationCaches();
+
+          // Apply translations to full data
+          if (Array.isArray(fullData)) {
+            // 1. Translate networkId to networkName
+            if (fullData.some((row: any) => row.networkId)) {
+              const networkMap = await fetchNetworkMap();
+              fullData = await Promise.all(
+                fullData.map(async (row: any) => {
+                  if (row.networkId && !row.networkName) {
+                    row.networkName = networkMap[row.networkId] || row.networkId;
+                  }
+                  // 2. Translate GRP/OBJ values in all fields
+                  for (const key of Object.keys(row)) {
+                    if (typeof row[key] === 'string' && (row[key].startsWith('GRP') || row[key].startsWith('OBJ'))) {
+                      row[key] = await translateSpecialValue(row[key]);
+                    }
+                  }
+                  return row;
+                })
+              );
+            } else {
+              // Even if no networkId, still translate GRP/OBJ values
+              fullData = await Promise.all(
+                fullData.map(async (row: any) => {
+                  for (const key of Object.keys(row)) {
+                    if (typeof row[key] === 'string' && (row[key].startsWith('GRP') || row[key].startsWith('OBJ'))) {
+                      row[key] = await translateSpecialValue(row[key]);
+                    }
+                  }
+                  return row;
+                })
+              );
+            }
+          }
+
           // Update with full data
           const fullResults: ReportResults = {
-            data: fullReport.data,
+            data: fullData,
             summary: {
               ...reportResults.summary,
-              recordsReturned: fullReport.data.length
+              recordsReturned: fullData.length
             },
             metadata: {
               ...reportResults.metadata,
-              preview: fullReport.data.slice(0, 3)
+              preview: fullData.slice(0, 3)
             }
           };
           setReportResults(fullResults);
@@ -854,6 +1281,64 @@ export default function ReportBuilder() {
           </Card>
         </div>
 
+        {/* Lockdown Report Summary */}
+        {reportConfig.dataSource === 'lockdown-report' && reportResults.data.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Networks with Deny-All Rule</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {reportResults.data.filter((row: any) => row.hasDenyAllRule === true).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {reportResults.data.length > 0 
+                        ? Math.round((reportResults.data.filter((row: any) => row.hasDenyAllRule === true).length / reportResults.data.length) * 100)
+                        : 0}% of networks
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-red-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Networks Without Deny-All</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {reportResults.data.filter((row: any) => row.hasDenyAllRule === false).length}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Needs attention
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-yellow-200 bg-yellow-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2">
+                  <X className="w-5 h-5 text-yellow-600" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Errors</p>
+                    <p className="text-2xl font-bold text-yellow-700">
+                      {reportResults.data.filter((row: any) => row.lastRulePolicy === 'ERROR').length}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Failed to fetch rules
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Limit Notice */}
         {reportConfig.limit && reportResults.summary.recordsReturned >= reportConfig.limit && (
           <Card className="border-yellow-200 bg-yellow-50">
@@ -885,7 +1370,7 @@ export default function ReportBuilder() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-md overflow-hidden">
+              <div className="border border-color-border-200 rounded-md overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-muted">
@@ -903,16 +1388,51 @@ export default function ReportBuilder() {
                     <tbody>
                       {(reportResults.metadata.preview.length > 0 ? reportResults.metadata.preview : reportResults.data.slice(0, 3)).map((row, index) => (
                         <tr key={index} className="border-t">
-                          {reportConfig.columns.map((column) => (
-                            <td key={column} className="px-4 py-3 text-sm">
-                              {Array.isArray(row[column]) 
-                                ? row[column].join(', ')
-                                : typeof row[column] === 'boolean'
-                                ? row[column] ? 'Yes' : 'No'
-                                : row[column] || '-'
+                          {reportConfig.columns.map((column) => {
+                            const value = row[column];
+                            let displayValue: React.ReactNode = value || '-';
+                            
+                            // Special formatting for lockdown report
+                            if (reportConfig.dataSource === 'lockdown-report') {
+                              if (column === 'hasDenyAllRule') {
+                                displayValue = (
+                                  <Badge variant={value ? 'default' : 'destructive'} className={value ? 'bg-green-600' : 'bg-red-600'}>
+                                    {value ? 'Yes' : 'No'}
+                                  </Badge>
+                                );
+                              } else if (column === 'lastRulePolicy') {
+                                const policyColor = value === 'deny' ? 'bg-green-600' : value === 'allow' ? 'bg-yellow-600' : value === 'ERROR' ? 'bg-red-600' : 'bg-gray-600';
+                                displayValue = (
+                                  <Badge variant="outline" className={policyColor + ' text-white'}>
+                                    {value?.toUpperCase() || 'UNKNOWN'}
+                                  </Badge>
+                                );
+                              } else if (column === 'lastRuleComment' && value && value.length > 50) {
+                                displayValue = (
+                                  <span title={value} className="truncate block max-w-xs">
+                                    {value.substring(0, 50)}...
+                                  </span>
+                                );
                               }
-                            </td>
-                          ))}
+                            }
+                            
+                            // Default formatting for other types
+                            if (displayValue === (value || '-')) {
+                              if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                              } else if (typeof value === 'boolean') {
+                                displayValue = value ? 'Yes' : 'No';
+                              } else {
+                                displayValue = value || '-';
+                              }
+                            }
+                            
+                            return (
+                              <td key={column} className="px-4 py-3 text-sm">
+                                {displayValue}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>
@@ -933,7 +1453,7 @@ export default function ReportBuilder() {
           </CardHeader>
           <CardContent>
             {reportResults.data.length > 0 ? (
-              <div className="border rounded-md overflow-hidden">
+              <div className="border border-color-border-200 rounded-md overflow-hidden">
                 <div className="overflow-x-auto max-h-96">
                   <table className="w-full">
                     <thead className="bg-muted sticky top-0">
@@ -951,16 +1471,51 @@ export default function ReportBuilder() {
                     <tbody>
                       {reportResults.data.map((row, index) => (
                         <tr key={index} className="border-t hover:bg-muted/50">
-                          {reportConfig.columns.map((column) => (
-                            <td key={column} className="px-4 py-3 text-sm">
-                              {Array.isArray(row[column]) 
-                                ? row[column].join(', ')
-                                : typeof row[column] === 'boolean'
-                                ? row[column] ? 'Yes' : 'No'
-                                : row[column] || '-'
+                          {reportConfig.columns.map((column) => {
+                            const value = row[column];
+                            let displayValue: React.ReactNode = value || '-';
+                            
+                            // Special formatting for lockdown report
+                            if (reportConfig.dataSource === 'lockdown-report') {
+                              if (column === 'hasDenyAllRule') {
+                                displayValue = (
+                                  <Badge variant={value ? 'default' : 'destructive'} className={value ? 'bg-green-600' : 'bg-red-600'}>
+                                    {value ? 'Yes' : 'No'}
+                                  </Badge>
+                                );
+                              } else if (column === 'lastRulePolicy') {
+                                const policyColor = value === 'deny' ? 'bg-green-600' : value === 'allow' ? 'bg-yellow-600' : value === 'ERROR' ? 'bg-red-600' : 'bg-gray-600';
+                                displayValue = (
+                                  <Badge variant="outline" className={policyColor + ' text-white'}>
+                                    {value?.toUpperCase() || 'UNKNOWN'}
+                                  </Badge>
+                                );
+                              } else if (column === 'lastRuleComment' && value && value.length > 50) {
+                                displayValue = (
+                                  <span title={value} className="truncate block max-w-xs">
+                                    {value.substring(0, 50)}...
+                                  </span>
+                                );
                               }
-                            </td>
-                          ))}
+                            }
+                            
+                            // Default formatting for other types
+                            if (displayValue === (value || '-')) {
+                              if (Array.isArray(value)) {
+                                displayValue = value.join(', ');
+                              } else if (typeof value === 'boolean') {
+                                displayValue = value ? 'Yes' : 'No';
+                              } else {
+                                displayValue = value || '-';
+                              }
+                            }
+                            
+                            return (
+                              <td key={column} className="px-4 py-3 text-sm">
+                                {displayValue}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>
@@ -989,23 +1544,29 @@ export default function ReportBuilder() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 bg-color-background-100">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Report Builder</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-color-text-100">Report Builder</h1>
+          <p className="text-color-text-300">
             Create custom reports from your Meraki data with filters and conditions
           </p>
         </div>
         <div className="flex gap-2">
           <Button 
             onClick={generateReport} 
-            disabled={!reportConfig.dataSource || isGenerating}
+            disabled={!reportConfig.dataSource || reportConfig.selectedOrgs.length === 0 || isGenerating}
             className="flex items-center gap-2"
           >
             <Play className="w-4 h-4" />
             {isGenerating ? 'Generating...' : 'Generate Report'}
           </Button>
+          {(!reportConfig.dataSource || reportConfig.selectedOrgs.length === 0) && (
+            <div className="text-sm text-red-600 mt-2">
+              {!reportConfig.dataSource && 'Please select a data source. '}
+              {reportConfig.selectedOrgs.length === 0 && 'Please select at least one organization.'}
+            </div>
+          )}
           {reportId && (
             <>
               <Button variant="outline" onClick={() => exportReport('csv')}>
@@ -1091,7 +1652,7 @@ export default function ReportBuilder() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Organizations</Label>
+                    <Label>Organizations ({reportConfig.selectedOrgs.length} selected)</Label>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -1121,7 +1682,7 @@ export default function ReportBuilder() {
                       </Button>
                     </div>
                   </div>
-                  <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                  <div className="border border-color-border-200 rounded-md p-3 max-h-48 overflow-y-auto">
                     {organizations.map((org) => (
                       <div key={org.id} className="flex items-center space-x-2 mb-2">
                         <Checkbox
@@ -1151,7 +1712,7 @@ export default function ReportBuilder() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Networks (Optional)</Label>
+                    <Label>Networks ({reportConfig.selectedNetworks.length} selected) - Optional</Label>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
@@ -1181,7 +1742,7 @@ export default function ReportBuilder() {
                       </Button>
                     </div>
                   </div>
-                  <div className="border rounded-md p-3 max-h-48 overflow-y-auto">
+                  <div className="border border-color-border-200 rounded-md p-3 max-h-48 overflow-y-auto">
                     {networks.map((network) => (
                       <div key={network.id} className="flex items-center space-x-2 mb-2">
                         <Checkbox
@@ -1219,6 +1780,22 @@ export default function ReportBuilder() {
                   </div>
                 </div>
               </div>
+
+              {/* Status Summary */}
+              {(reportConfig.selectedOrgs.length > 0 || reportConfig.selectedNetworks.length > 0) && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Current Selection</h4>
+                  <div className="text-sm text-blue-700">
+                    <p>✓ {reportConfig.selectedOrgs.length} organization(s) selected</p>
+                    {reportConfig.selectedNetworks.length > 0 && (
+                      <p>✓ {reportConfig.selectedNetworks.length} network(s) selected</p>
+                    )}
+                    {reportConfig.selectedNetworks.length === 0 && reportConfig.selectedOrgs.length > 0 && (
+                      <p>• All networks from selected organizations will be included</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1385,7 +1962,7 @@ export default function ReportBuilder() {
                     </Button>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-color-border-200 rounded-md p-3">
                   {selectedDataSource?.fields.map((field) => (
                     <div key={field.name} className="flex items-center space-x-2">
                       <Checkbox

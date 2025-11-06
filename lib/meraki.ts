@@ -416,7 +416,13 @@ class MerakiAPI {
   // Organization-level policy objects
   async getPolicyObjects(organizationId: string) {
     try {
-      const response = await this.axiosInstance.get(`/organizations/${organizationId}/policyObjects`);
+      console.log(`Fetching policy objects for organization ${organizationId}`);
+      const response = await this.axiosInstance.get(`/organizations/${organizationId}/policyObjects`, {
+        params: {
+          perPage: 5000  // Use maximum entries per page
+        }
+      });
+      console.log(`Found ${response.data?.length || 0} policy objects for org ${organizationId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching policy objects:', error);
@@ -467,7 +473,13 @@ class MerakiAPI {
   // Policy object groups
   async getPolicyObjectGroups(organizationId: string) {
     try {
-      const response = await this.axiosInstance.get(`/organizations/${organizationId}/policyObjects/groups`);
+      console.log(`Fetching policy object groups for organization ${organizationId}`);
+      const response = await this.axiosInstance.get(`/organizations/${organizationId}/policyObjects/groups`, {
+        params: {
+          perPage: 1000  // Maximum allowed for policy object groups is 1000
+        }
+      });
+      console.log(`Found ${response.data?.length || 0} policy object groups for org ${organizationId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching policy object groups:', error);

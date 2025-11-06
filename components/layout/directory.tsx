@@ -25,13 +25,20 @@ export default function Directory({
   );
 
   return (
-    <aside className="flex-shrink-0 w-full bg-black sm:w-96 h-screen overflow-hidden border-r border-gray-800 flex flex-col">
-      <div className="px-6 pt-6 pb-0 bg-black z-20 flex-shrink-0">
-        <Link href="/" className="bg-dark-accent-1 hover:bg-dark-accent-2 transition-all rounded-2xl h-12 w-12 flex justify-center items-center">
-          <DirectoryIcon className="text-white" />
+    <aside 
+      className="flex-shrink-0 w-full sm:w-96 h-screen overflow-hidden border-r border-color-border-200 flex flex-col bg-color-background-90"
+    >
+      <div 
+        className="px-6 pt-6 pb-0 z-20 flex-shrink-0 bg-color-background-90"
+      >
+        <Link 
+          href="/" 
+          className="transition-all rounded-2xl h-12 w-12 flex justify-center items-center bg-color-primary-100 hover:bg-color-primary-200"
+        >
+          <DirectoryIcon className="text-color-background-100" />
         </Link>
-        <p className="mt-8 text-2xl text-white font-bold">Directory</p>
-        <p className="mt-2 text-sm text-dark-accent-5">
+        <p className="mt-8 text-2xl font-bold text-color-text-100">Directory</p>
+        <p className="mt-2 text-sm text-color-text-300">
           Search directory of {Intl.NumberFormat('en-us').format(totalUsers)}{' '}
           developers
         </p>
@@ -40,15 +47,19 @@ export default function Directory({
             <label htmlFor="search" className="sr-only">
               Search
             </label>
-            <div className="relative shadow-sm border-0 border-b-dark-accent-2 rounded-none border-b-[1px] ">
-              <div className="absolute bg-black inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <SearchIcon className="h-4 w-4 text-dark-accent-3" />
+            <div 
+              className="relative shadow-sm border-0 border-b rounded-none border-b-[1px]"
+            >
+              <div 
+                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none bg-color-background-90"
+              >
+                <SearchIcon className="h-4 w-4 text-color-text-400" />
               </div>
               <input
                 type="search"
                 name="search"
                 id="search"
-                className="text-white placeholder:text-dark-accent-3 focus:ring-transparent border-none bg-black focus:border-transparent block w-full pl-10 sm:text-sm rounded-md"
+                className="focus:ring-transparent border-none focus:border-transparent block w-full pl-10 sm:text-sm rounded-md text-color-text-100 bg-color-background-90"
                 placeholder="Search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -65,7 +76,9 @@ export default function Directory({
         {debouncedQuery.length === 0 ? (
           results.map(({ _id: letter, users }) => (
             <div key={letter} className="relative">
-              <div className="bg-dark-accent-1 px-6 py-1 text-sm font-bold text-white uppercase">
+              <div 
+                className="px-6 py-1 text-sm font-bold uppercase bg-color-background-80 text-color-text-100"
+              >
                 <h3>{letter}</h3>
               </div>
               <DirectoryResults users={users} />
@@ -75,7 +88,7 @@ export default function Directory({
           <DirectoryResults users={searchedUsers} />
         ) : (
           <div className="px-6 py-6">
-            <p className="text-center text-gray-500">No results found</p>
+            <p className="text-center text-color-text-300">No results found</p>
           </div>
         )}
       </nav>

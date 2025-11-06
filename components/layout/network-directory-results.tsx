@@ -1,6 +1,7 @@
 import { NetworkProps } from '@/lib/api/network';
-import { useState } from 'react';
-import { Building2, Warehouse, MapPin, Network } from 'lucide-react';
+import { Building2, Warehouse, MapPin, Network, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Item, ItemMedia, ItemContent, ItemTitle, ItemDescription, ItemActions, ItemGroup } from '@/components/ui/item';
 
 // Function to determine the appropriate icon based on network tags and ID
 function getNetworkIcon(network: NetworkProps) {
@@ -31,91 +32,64 @@ export default function NetworkDirectoryResults({
   onNetworkSelect: (network: NetworkProps) => void;
   selectedNetworkId?: string;
 }) {
-  const [selectedNetworks, setSelectedNetworks] = useState<Set<string>>(new Set());
-
-  const handleNetworkToggle = async (networkId: string, selected: boolean) => {
-    const newSelected = new Set(selectedNetworks);
-    if (selected) {
-      newSelected.add(networkId);
-    } else {
-      newSelected.delete(networkId);
-    }
-    setSelectedNetworks(newSelected);
-
-    // Update the backend
-    try {
-      await fetch('/api/network/select', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ networkId, selected }),
-      });
-    } catch (error) {
-      console.error('Error updating network selection:', error);
-    }
-  };
 
   return (
-    <ul className="relative z-0 divide-y divide-border">
-      {networks.map((network) => (
-        <li key={network.id} className="bg-background">
-          <div
-            className={`relative px-6 py-5 flex items-center space-x-3 hover:bg-accent focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary cursor-pointer ${
-              selectedNetworkId === network.id ? 'bg-accent' : ''
+    <ItemGroup className="divide-y">
+      {networks.map((network) => {
+        const IconComponent = getNetworkIcon(network);
+        const isSelected = selectedNetworkId === network.id;
+        
+        return (
+          <Item
+            key={network.id}
+            variant="outline"
+            size="sm"
+            asChild
+            className={`cursor-pointer ${
+              isSelected 
+                ? 'bg-color-primary-10' 
+                : 'bg-color-background-100 hover:bg-color-background-90'
             }`}
             onClick={() => onNetworkSelect(network)}
           >
-            <div className="flex-shrink-0">
-              {(() => {
-                const IconComponent = getNetworkIcon(network);
-                return (
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 flex items-center justify-center">
-                    <IconComponent className="h-5 w-5 text-white" />
+            <a href="#" onClick={(e) => e.preventDefault()}>
+              <ItemMedia variant="icon" className="bg-color-primary-100">
+                <IconComponent className="size-5 text-color-background-100" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle className="text-color-text-100 font-medium">
+                  {network.name}
+                </ItemTitle>
+                <ItemDescription>
+                  <div className="flex items-center gap-1 flex-wrap mt-1">
+                    {network.productTypes.map((type, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="secondary" 
+                        className="text-xs"
+                        style={{ 
+                          backgroundColor: 'rgba(var(--color-primary-100), 0.2)',
+                          color: 'rgb(var(--color-primary-100))'
+                        }}
+                      >
+                        {type}
+                      </Badge>
+                    ))}
                   </div>
-                );
-              })()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="focus:outline-none">
-                <span className="absolute inset-0" aria-hidden="true" />
-                <p className="text-sm font-bold text-foreground">{network.name}</p>
-                <div className="flex items-center mt-1">
-                  {network.productTypes.map((type, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary mr-1"
-                    >
-                      {type}
+                  {network.tags && network.tags.length > 0 && (
+                    <span className="text-xs mt-1 block text-muted-foreground">
+                      Tags: {network.tags.join(', ')}
                     </span>
-                  ))}
-                </div>
-                {network.tags && network.tags.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Tags: {network.tags.join(', ')}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex-shrink-0">
-              <label htmlFor={`network-${network.id}`} className="sr-only">
-                Select network {network.name}
-              </label>
-              <input
-                id={`network-${network.id}`}
-                type="checkbox"
-                className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
-                checked={selectedNetworks.has(network.id)}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  handleNetworkToggle(network.id, e.target.checked);
-                }}
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          </div>
-        </li>
-      ))}
-    </ul>
+                  )}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <ChevronRight className="size-4 text-muted-foreground" />
+              </ItemActions>
+            </a>
+          </Item>
+        );
+      })}
+    </ItemGroup>
   );
 }

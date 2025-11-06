@@ -74,53 +74,97 @@ module.exports = {
   			'dark-accent-2': '#333333',
   			'dark-accent-3': '#444444',
   			'dark-accent-5': '#888888',
-  			// Shadcn theme variables
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+  			// Shadcn theme variables mapped to CSS custom properties
+  			background: 'rgb(var(--color-background-100))',
+  			foreground: 'rgb(var(--color-text-100))',
   			card: {
-  				DEFAULT: 'hsl(var(--card))',
-  				foreground: 'hsl(var(--card-foreground))'
+  				DEFAULT: 'rgb(var(--color-card-100))',
+  				foreground: 'rgb(var(--color-text-100))'
   			},
   			popover: {
-  				DEFAULT: 'hsl(var(--popover))',
-  				foreground: 'hsl(var(--popover-foreground))'
+  				DEFAULT: 'rgb(var(--color-background-100))',
+  				foreground: 'rgb(var(--color-text-100))'
   			},
   			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
+  				DEFAULT: 'rgb(var(--color-primary-100))',
+  				foreground: 'rgb(var(--color-background-100))'
   			},
   			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				foreground: 'hsl(var(--secondary-foreground))'
+  				DEFAULT: 'rgb(var(--color-background-90))',
+  				foreground: 'rgb(var(--color-text-100))'
   			},
   			muted: {
-  				DEFAULT: 'hsl(var(--muted))',
-  				foreground: 'hsl(var(--muted-foreground))'
+  				DEFAULT: 'rgb(var(--color-background-90))',
+  				foreground: 'rgb(var(--color-text-300))'
   			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
+			accent: {
+				DEFAULT: 'rgb(var(--color-primary-10))',
+				foreground: 'rgb(var(--color-primary-100))',
+				dark: 'rgb(var(--color-accent-dark))'
+			},
   			destructive: {
-  				DEFAULT: 'hsl(var(--destructive))',
-  				foreground: 'hsl(var(--destructive-foreground))'
+  				DEFAULT: 'rgb(var(--color-error-200))',
+  				foreground: 'rgb(var(--color-background-100))'
   			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
+  			border: 'rgb(var(--color-border-200))',
+  			input: 'rgb(var(--color-border-200))',
+  			ring: 'rgb(var(--color-primary-100))',
   			chart: {
-  				'1': 'hsl(var(--chart-1))',
-  				'2': 'hsl(var(--chart-2))',
-  				'3': 'hsl(var(--chart-3))',
-  				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
+  				'1': 'rgb(var(--color-primary-100))',
+  				'2': 'rgb(var(--color-primary-200))',
+  				'3': 'rgb(var(--color-primary-300))',
+  				'4': 'rgb(var(--color-primary-400))',
+  				'5': 'rgb(var(--color-primary-500))'
+  			},
+  			// Direct color mappings from CSS
+  			'color-primary': {
+  				10: 'rgb(var(--color-primary-10))',
+  				20: 'rgb(var(--color-primary-20))',
+  				30: 'rgb(var(--color-primary-30))',
+  				40: 'rgb(var(--color-primary-40))',
+  				50: 'rgb(var(--color-primary-50))',
+  				60: 'rgb(var(--color-primary-60))',
+  				70: 'rgb(var(--color-primary-70))',
+  				80: 'rgb(var(--color-primary-80))',
+  				90: 'rgb(var(--color-primary-90))',
+  				100: 'rgb(var(--color-primary-100))',
+  				200: 'rgb(var(--color-primary-200))',
+  				300: 'rgb(var(--color-primary-300))',
+  				400: 'rgb(var(--color-primary-400))',
+  				500: 'rgb(var(--color-primary-500))',
+  				600: 'rgb(var(--color-primary-600))',
+  				700: 'rgb(var(--color-primary-700))',
+  				800: 'rgb(var(--color-primary-800))',
+  				900: 'rgb(var(--color-primary-900))'
+  			},
+  			'color-background': {
+  				100: 'rgb(var(--color-background-100))',
+  				90: 'rgb(var(--color-background-90))',
+  				80: 'rgb(var(--color-background-80))'
+  			},
+  			'color-text': {
+  				100: 'rgb(var(--color-text-100))',
+  				200: 'rgb(var(--color-text-200))',
+  				300: 'rgb(var(--color-text-300))',
+  				350: 'rgb(var(--color-text-350))',
+  				400: 'rgb(var(--color-text-400))'
+  			},
+  			'color-border': {
+  				100: 'rgb(var(--color-border-100))',
+  				200: 'rgb(var(--color-border-200))',
+  				300: 'rgb(var(--color-border-300))',
+  				400: 'rgb(var(--color-border-400))'
+  			},
+  			'color-error': {
+  				10: 'rgb(var(--color-error-10))',
+  				20: 'rgb(var(--color-error-20))',
+  				30: 'rgb(var(--color-error-30))',
+  				100: 'rgb(var(--color-error-100))',
+  				200: 'rgb(var(--color-error-200))',
+  				500: 'rgb(var(--color-error-500))'
   			}
   		},
-  		borderRadius: {
-  			lg: 'var(--radius)',
-  			md: 'calc(var(--radius) - 2px)',
-  			sm: 'calc(var(--radius) - 4px)'
-  		}
+
   	}
   },
   plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography'), require("tailwindcss-animate")]

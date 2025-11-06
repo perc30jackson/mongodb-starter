@@ -175,17 +175,20 @@ export default function WirelessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-color-background-100">
       <div className="container mx-auto px-4 py-8">
         <Breadcrumb />
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-muted-foreground hover:text-foreground">
+            <Link 
+              href="/" 
+              className="text-color-text-300 hover:text-color-text-100 transition-colors"
+            >
               ← Back to Networks
             </Link>
             <div className="flex items-center gap-2">
-              <Wifi className="h-6 w-6" />
-              <h1 className="text-3xl font-bold">Wireless Management</h1>
+              <Wifi className="h-6 w-6 text-color-primary-100" />
+              <h1 className="text-3xl font-bold text-color-text-100">Wireless Management</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -230,7 +233,7 @@ export default function WirelessPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">Wireless SSIDs</h2>
-                <Button>
+                <Button disabled={true}>
                   <Plus className="h-4 w-4 mr-2" />
                   Configure SSID
                 </Button>
@@ -262,6 +265,7 @@ export default function WirelessPage() {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={true}
                             onClick={() => toggleSSIDEnabled(ssid.number, ssid.enabled)}
                           >
                             {ssid.enabled ? (
@@ -276,7 +280,7 @@ export default function WirelessPage() {
                               </>
                             )}
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" disabled={true}>
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
                           </Button>

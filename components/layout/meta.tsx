@@ -21,7 +21,7 @@ export default function Meta({ props }: { props: MetaProps }) {
       <title>{props.title}</title>
       <link rel="icon" href="/favicon.ico" />
       <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
+      
       <meta name="theme-color" content="#7b46f6" />
 
       <meta charSet="utf-8" />

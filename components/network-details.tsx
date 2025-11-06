@@ -5,6 +5,7 @@ import fetcher from '@/lib/fetcher';
 import { LoadingDots } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Shield, Router, Wifi, ExternalLink } from 'lucide-react';
 import Breadcrumb from '@/components/breadcrumb';
@@ -95,30 +96,27 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
   ];
 
   return (
-    <div className="h-full bg-background text-foreground">
+    <div className="h-full bg-color-background-100 text-color-text-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary/80 to-primary px-6 py-8">
+      <div 
+        className="px-6 py-8 bg-color-primary-100"
+      >
         <div className="max-w-7xl mx-auto">
           <Breadcrumb />
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-primary-foreground">{network.name}</h1>
-              <p className="text-primary-foreground/80 mt-2">Network ID: {network.id}</p>
+              <h1 className="text-3xl font-bold text-color-text-100 light:text-color-background-100">{network.name}</h1>
+              <p className="mt-2 opacity-80 text-color-text-100 light:text-color-background-100">Network ID: {network.id}</p>
               <div className="flex flex-wrap gap-2 mt-4">
                 {network.productTypes.map((type, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white/20 text-primary-foreground"
-                  >
-                    {type}
-                  </span>
+                  <Badge key={index} variant="secondary" className="text-xs">{type}</Badge>
                 ))}
               </div>
             </div>
             <div className="flex-shrink-0">
               <Button
                 variant="secondary"
-                className="bg-white/10 hover:bg-white/20 text-primary-foreground border-white/20"
+                className="bg-color-primary-800 text-color-background-100 hover:bg-color-primary-200 hover:opacity-80"
                 onClick={() => window.open(network.url, '_blank')}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
@@ -130,7 +128,7 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border">
+      <div className="border-b border-color-border-200">
         <div className="max-w-7xl mx-auto">
           <nav className="-mb-px flex space-x-8 px-6">
             {tabs.map((tab) => (
@@ -139,8 +137,8 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                    ? 'border-color-primary-100 text-color-primary-100'
+                    : 'border-transparent text-color-text-300 hover:text-color-text-100'
                 }`}
               >
                 {tab.name}
@@ -322,7 +320,7 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
                 </Button>
                 <Button
                   onClick={() => handleDeviceAction('blink')}
-                  disabled={selectedDevices.size === 0}
+                  disabled={true}
                   variant="secondary"
                   className="disabled:opacity-50"
                 >
@@ -330,7 +328,7 @@ export default function NetworkDetails({ network }: { network: NetworkProps }) {
                 </Button>
                 <Button
                   onClick={() => handleDeviceAction('reboot')}
-                  disabled={selectedDevices.size === 0}
+                  disabled={true}
                   variant="destructive"
                   className="disabled:opacity-50"
                 >

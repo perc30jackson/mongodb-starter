@@ -120,6 +120,7 @@ export function FirewallRuleTable({
             size="sm" 
             variant="ghost" 
             className="h-8 w-8 p-0"
+            disabled={true}
             onClick={(e) => {
               e.stopPropagation();
               onRuleEdit?.(rule, index || 0);
@@ -131,6 +132,7 @@ export function FirewallRuleTable({
             size="sm" 
             variant="ghost" 
             className="h-8 w-8 p-0 text-destructive"
+            disabled={true}
             onClick={(e) => {
               e.stopPropagation();
               onRuleDelete?.(index || 0);

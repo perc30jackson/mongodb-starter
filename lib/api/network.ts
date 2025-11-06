@@ -56,7 +56,21 @@ export interface ResultProps {
   networks: NetworkProps[];
 }
 
-const meraki = new MerakiAPI(process.env.MERAKI_API_KEY || '');
+// Note: MerakiAPI instance should be created per-request with proper API key validation
+// This global instance is only used for cached data retrieval functions
+// For API operations, use functions that create MerakiAPI with validated API key
+let meraki: MerakiAPI | null = null;
+
+function getMerakiInstance(): MerakiAPI {
+  if (!meraki) {
+    const apiKey = process.env.MERAKI_API_KEY;
+    if (!apiKey) {
+      throw new Error('MERAKI_API_KEY environment variable is not set');
+    }
+    meraki = new MerakiAPI(apiKey);
+  }
+  return meraki;
+}
 
 export async function getNetwork(networkId: string): Promise<NetworkProps | null> {
   try {
@@ -249,12 +263,12 @@ export async function syncNetworksFromMeraki(): Promise<void> {
     }
 
     console.log('Starting network sync from Meraki API...');
-    const organizations = await meraki.getOrganizations();
+    const organizations = await getMerakiInstance().getOrganizations();
     const client = await clientPromise;
     const networksCollection = client.db('meraki-dashboard').collection('networks');
     
     for (const org of organizations) {
-      const networks = await meraki.getNetworks(org.id);
+      const networks = await getMerakiInstance().getNetworks(org.id);
       
       for (const network of networks) {
         await networksCollection.updateOne(
@@ -276,7 +290,7 @@ export async function syncNetworksFromMeraki(): Promise<void> {
 
 export async function syncDevicesFromMeraki(networkId: string): Promise<void> {
   try {
-    const devices = await meraki.getNetworkDevices(networkId);
+    const devices = await getMerakiInstance().getNetworkDevices(networkId);
     const client = await clientPromise;
     const devicesCollection = client.db('meraki-dashboard').collection('devices');
     
@@ -289,7 +303,7 @@ export async function syncDevicesFromMeraki(networkId: string): Promise<void> {
     // Fetch device statuses for this network
     let deviceStatuses: any[] = [];
     try {
-      deviceStatuses = await meraki.getOrganizationDevicesStatuses(network.organizationId, [networkId]);
+      deviceStatuses = await getMerakiInstance().getOrganizationDevicesStatuses(network.organizationId, [networkId]);
     } catch (error) {
       console.warn('Could not fetch device statuses, proceeding without status info:', error);
     }
@@ -345,7 +359,7 @@ export async function getFirewallRules(networkId: string): Promise<FirewallRule[
 
     console.log(`Fetching firewall rules for ${networkId} from Meraki API (cache miss)`);
     
-    const response: FirewallRulesResponse = await meraki.getFirewallRules(networkId);
+    const response: FirewallRulesResponse = await getMerakiInstance().getFirewallRules(networkId);
     const rules = response.rules || [];
     
     // Cache the results
@@ -362,7 +376,7 @@ export async function updateFirewallRules(networkId: string, rules: FirewallRule
   try {
     const { FirewallCache } = await import('@/lib/firewall-cache');
     
-    const result = await meraki.updateFirewallRules(networkId, rules);
+    const result = await getMerakiInstance().updateFirewallRules(networkId, rules);
     
     // Update cache with new rules
     await FirewallCache.setFirewallRules(networkId, rules);
@@ -751,7 +765,7 @@ export async function blinkDeviceLeds(serial: string, duration: number = 20) {
     if (!device) {
       throw new Error('Device not found');
     }
-    return await meraki.blinkDeviceLeds(device.networkId, serial, duration);
+    return await getMerakiInstance().blinkDeviceLeds(device.networkId, serial, duration);
   } catch (error) {
     console.error('Error blinking device LEDs:', error);
     throw error;
@@ -767,7 +781,7 @@ export async function rebootDevice(serial: string) {
     if (!device) {
       throw new Error('Device not found');
     }
-    return await meraki.rebootDevice(device.networkId, serial);
+    return await getMerakiInstance().rebootDevice(device.networkId, serial);
   } catch (error) {
     console.error('Error rebooting device:', error);
     throw error;
@@ -781,7 +795,7 @@ export async function getNetworkClients(networkId: string, timespan = 2592000) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getNetworkClients(networkId, timespan);
+    return await getMerakiInstance().getNetworkClients(networkId, timespan);
   } catch (error) {
     console.error('Error getting network clients:', error);
     throw error;
@@ -795,7 +809,7 @@ export async function getDeviceStatus(networkId: string, serial: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getDeviceStatus(networkId, serial);
+    return await getMerakiInstance().getDeviceStatus(networkId, serial);
   } catch (error) {
     console.error('Error getting device status:', error);
     throw error;
@@ -804,14 +818,14 @@ export async function getDeviceStatus(networkId: string, serial: string) {
 
 export async function syncAllDeviceStatuses(): Promise<void> {
   try {
-    const organizations = await meraki.getOrganizations();
+    const organizations = await getMerakiInstance().getOrganizations();
     const client = await clientPromise;
     const devicesCollection = client.db('meraki-dashboard').collection('devices');
     
     for (const org of organizations) {
       try {
         // Get all device statuses for this organization
-        const deviceStatuses = await meraki.getOrganizationDevicesStatuses(org.id);
+        const deviceStatuses = await getMerakiInstance().getOrganizationDevicesStatuses(org.id);
         
         // Update each device with its current status
         for (const statusDevice of deviceStatuses) {
@@ -913,7 +927,7 @@ export async function getWirelessSSIDs(networkId: string): Promise<WirelessSSID[
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessSSIDs(networkId);
+    return await getMerakiInstance().getWirelessSSIDs(networkId);
   } catch (error) {
     console.error('Error getting wireless SSIDs:', error);
     throw error;
@@ -927,7 +941,7 @@ export async function getWirelessSSID(networkId: string, ssidNumber: number): Pr
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessSSID(networkId, ssidNumber);
+    return await getMerakiInstance().getWirelessSSID(networkId, ssidNumber);
   } catch (error) {
     console.error('Error getting wireless SSID:', error);
     throw error;
@@ -941,7 +955,7 @@ export async function updateWirelessSSID(networkId: string, ssidNumber: number, 
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateWirelessSSID(networkId, ssidNumber, config);
+    return await getMerakiInstance().updateWirelessSSID(networkId, ssidNumber, config);
   } catch (error) {
     console.error('Error updating wireless SSID:', error);
     throw error;
@@ -955,7 +969,7 @@ export async function getWirelessSettings(networkId: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessSettings(networkId);
+    return await getMerakiInstance().getWirelessSettings(networkId);
   } catch (error) {
     console.error('Error getting wireless settings:', error);
     throw error;
@@ -969,7 +983,7 @@ export async function updateWirelessSettings(networkId: string, settings: any) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateWirelessSettings(networkId, settings);
+    return await getMerakiInstance().updateWirelessSettings(networkId, settings);
   } catch (error) {
     console.error('Error updating wireless settings:', error);
     throw error;
@@ -983,7 +997,7 @@ export async function getWirelessRFProfiles(networkId: string): Promise<Wireless
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessRFProfiles(networkId);
+    return await getMerakiInstance().getWirelessRFProfiles(networkId);
   } catch (error) {
     console.error('Error getting wireless RF profiles:', error);
     throw error;
@@ -997,7 +1011,7 @@ export async function createWirelessRFProfile(networkId: string, profile: Omit<W
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createWirelessRFProfile(networkId, profile);
+    return await getMerakiInstance().createWirelessRFProfile(networkId, profile);
   } catch (error) {
     console.error('Error creating wireless RF profile:', error);
     throw error;
@@ -1011,7 +1025,7 @@ export async function updateWirelessRFProfile(networkId: string, profileId: stri
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateWirelessRFProfile(networkId, profileId, profile);
+    return await getMerakiInstance().updateWirelessRFProfile(networkId, profileId, profile);
   } catch (error) {
     console.error('Error updating wireless RF profile:', error);
     throw error;
@@ -1020,12 +1034,7 @@ export async function updateWirelessRFProfile(networkId: string, profileId: stri
 
 export async function deleteWirelessRFProfile(networkId: string, profileId: string): Promise<void> {
   try {
-    if (!process.env.MERAKI_API_KEY) {
-      throw new Error('Meraki API key not configured');
-    }
-    
-    const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    await meraki.deleteWirelessRFProfile(networkId, profileId);
+    await getMerakiInstance().deleteWirelessRFProfile(networkId, profileId);
   } catch (error) {
     console.error('Error deleting wireless RF profile:', error);
     throw error;
@@ -1039,7 +1048,7 @@ export async function getWirelessClients(networkId: string, timespan = 86400): P
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessClients(networkId, timespan);
+    return await getMerakiInstance().getWirelessClients(networkId, timespan);
   } catch (error) {
     console.error('Error getting wireless clients:', error);
     throw error;
@@ -1053,7 +1062,7 @@ export async function getWirelessAirMarshal(networkId: string, timespan = 86400)
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessAirMarshal(networkId, timespan);
+    return await getMerakiInstance().getWirelessAirMarshal(networkId, timespan);
   } catch (error) {
     console.error('Error getting wireless Air Marshal data:', error);
     throw error;
@@ -1067,7 +1076,7 @@ export async function getWirelessAirMarshalRules(networkId: string): Promise<Air
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessAirMarshalRules(networkId);
+    return await getMerakiInstance().getWirelessAirMarshalRules(networkId);
   } catch (error) {
     console.error('Error getting wireless Air Marshal rules:', error);
     throw error;
@@ -1081,7 +1090,7 @@ export async function createWirelessAirMarshalRule(networkId: string, rule: Omit
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createWirelessAirMarshalRule(networkId, rule);
+    return await getMerakiInstance().createWirelessAirMarshalRule(networkId, rule);
   } catch (error) {
     console.error('Error creating wireless Air Marshal rule:', error);
     throw error;
@@ -1095,7 +1104,7 @@ export async function updateWirelessAirMarshalRule(networkId: string, ruleId: st
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateWirelessAirMarshalRule(networkId, ruleId, rule);
+    return await getMerakiInstance().updateWirelessAirMarshalRule(networkId, ruleId, rule);
   } catch (error) {
     console.error('Error updating wireless Air Marshal rule:', error);
     throw error;
@@ -1104,12 +1113,7 @@ export async function updateWirelessAirMarshalRule(networkId: string, ruleId: st
 
 export async function deleteWirelessAirMarshalRule(networkId: string, ruleId: string): Promise<void> {
   try {
-    if (!process.env.MERAKI_API_KEY) {
-      throw new Error('Meraki API key not configured');
-    }
-    
-    const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    await meraki.deleteWirelessAirMarshalRule(networkId, ruleId);
+    await getMerakiInstance().deleteWirelessAirMarshalRule(networkId, ruleId);
   } catch (error) {
     console.error('Error deleting wireless Air Marshal rule:', error);
     throw error;
@@ -1138,7 +1142,7 @@ export async function getSwitchACLs(networkId: string): Promise<SwitchACL> {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getSwitchACLs(networkId);
+    return await getMerakiInstance().getSwitchACLs(networkId);
   } catch (error) {
     console.error('Error getting switch ACLs:', error);
     throw error;
@@ -1152,7 +1156,7 @@ export async function updateSwitchACLs(networkId: string, rules: SwitchACL['rule
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateSwitchACLs(networkId, rules);
+    return await getMerakiInstance().updateSwitchACLs(networkId, rules);
   } catch (error) {
     console.error('Error updating switch ACLs:', error);
     throw error;
@@ -1166,7 +1170,7 @@ export async function getSwitchStormControl(networkId: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getSwitchStormControl(networkId);
+    return await getMerakiInstance().getSwitchStormControl(networkId);
   } catch (error) {
     console.error('Error getting switch storm control:', error);
     throw error;
@@ -1180,7 +1184,7 @@ export async function updateSwitchStormControl(networkId: string, config: any) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateSwitchStormControl(networkId, config);
+    return await getMerakiInstance().updateSwitchStormControl(networkId, config);
   } catch (error) {
     console.error('Error updating switch storm control:', error);
     throw error;
@@ -1225,7 +1229,7 @@ export async function getOrganizationInventory(organizationId: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationInventory(organizationId);
+    return await getMerakiInstance().getOrganizationInventory(organizationId);
   } catch (error) {
     console.error('Error getting organization inventory:', error);
     throw error;
@@ -1239,7 +1243,7 @@ export async function getOrganizationAdmins(organizationId: string): Promise<Org
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationAdmins(organizationId);
+    return await getMerakiInstance().getOrganizationAdmins(organizationId);
   } catch (error) {
     console.error('Error getting organization admins:', error);
     throw error;
@@ -1253,7 +1257,7 @@ export async function createOrganizationAdmin(organizationId: string, admin: Omi
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createOrganizationAdmin(organizationId, admin);
+    return await getMerakiInstance().createOrganizationAdmin(organizationId, admin);
   } catch (error) {
     console.error('Error creating organization admin:', error);
     throw error;
@@ -1267,7 +1271,7 @@ export async function updateOrganizationAdmin(organizationId: string, adminId: s
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateOrganizationAdmin(organizationId, adminId, admin);
+    return await getMerakiInstance().updateOrganizationAdmin(organizationId, adminId, admin);
   } catch (error) {
     console.error('Error updating organization admin:', error);
     throw error;
@@ -1276,12 +1280,7 @@ export async function updateOrganizationAdmin(organizationId: string, adminId: s
 
 export async function deleteOrganizationAdmin(organizationId: string, adminId: string): Promise<void> {
   try {
-    if (!process.env.MERAKI_API_KEY) {
-      throw new Error('Meraki API key not configured');
-    }
-    
-    const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    await meraki.deleteOrganizationAdmin(organizationId, adminId);
+    await getMerakiInstance().deleteOrganizationAdmin(organizationId, adminId);
   } catch (error) {
     console.error('Error deleting organization admin:', error);
     throw error;
@@ -1295,7 +1294,7 @@ export async function getOrganizationAlertsProfiles(organizationId: string): Pro
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationAlertsProfiles(organizationId);
+    return await getMerakiInstance().getOrganizationAlertsProfiles(organizationId);
   } catch (error) {
     console.error('Error getting organization alerts profiles:', error);
     throw error;
@@ -1309,7 +1308,7 @@ export async function createOrganizationAlertsProfile(organizationId: string, pr
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createOrganizationAlertsProfile(organizationId, profile);
+    return await getMerakiInstance().createOrganizationAlertsProfile(organizationId, profile);
   } catch (error) {
     console.error('Error creating organization alerts profile:', error);
     throw error;
@@ -1348,7 +1347,7 @@ export async function createDevicePingTest(serial: string, target: string, count
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createDeviceLiveToolsPing(serial, target, count);
+    return await getMerakiInstance().createDeviceLiveToolsPing(serial, target, count);
   } catch (error) {
     console.error('Error creating device ping test:', error);
     throw error;
@@ -1362,7 +1361,7 @@ export async function getDevicePingTest(serial: string, pingId: string): Promise
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getDeviceLiveToolsPing(serial, pingId);
+    return await getMerakiInstance().getDeviceLiveToolsPing(serial, pingId);
   } catch (error) {
     console.error('Error getting device ping test:', error);
     throw error;
@@ -1376,7 +1375,7 @@ export async function createDeviceArpTableRequest(serial: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createDeviceLiveToolsArpTable(serial);
+    return await getMerakiInstance().createDeviceLiveToolsArpTable(serial);
   } catch (error) {
     console.error('Error creating device ARP table request:', error);
     throw error;
@@ -1390,7 +1389,7 @@ export async function getDeviceArpTable(serial: string, requestId: string): Prom
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getDeviceLiveToolsArpTable(serial, requestId);
+    return await getMerakiInstance().getDeviceLiveToolsArpTable(serial, requestId);
   } catch (error) {
     console.error('Error getting device ARP table:', error);
     throw error;
@@ -1404,7 +1403,7 @@ export async function createDeviceCableTest(serial: string, ports: string[]): Pr
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.createDeviceLiveToolsCableTest(serial, ports);
+    return await getMerakiInstance().createDeviceLiveToolsCableTest(serial, ports);
   } catch (error) {
     console.error('Error creating device cable test:', error);
     throw error;
@@ -1418,7 +1417,7 @@ export async function getDeviceCableTest(serial: string, testId: string): Promis
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getDeviceLiveToolsCableTest(serial, testId);
+    return await getMerakiInstance().getDeviceLiveToolsCableTest(serial, testId);
   } catch (error) {
     console.error('Error getting device cable test:', error);
     throw error;
@@ -1433,7 +1432,7 @@ export async function getOrganizationClientsOverview(organizationId: string, tim
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationClientsOverview(organizationId, timespan);
+    return await getMerakiInstance().getOrganizationClientsOverview(organizationId, timespan);
   } catch (error) {
     console.error('Error getting organization clients overview:', error);
     throw error;
@@ -1447,7 +1446,7 @@ export async function getOrganizationTopClientsReport(organizationId: string, ti
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationTopClientsReport(organizationId, timespan);
+    return await getMerakiInstance().getOrganizationTopClientsReport(organizationId, timespan);
   } catch (error) {
     console.error('Error getting organization top clients report:', error);
     throw error;
@@ -1461,7 +1460,7 @@ export async function getOrganizationTopApplicationsReport(organizationId: strin
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getOrganizationTopApplicationsReport(organizationId, timespan);
+    return await getMerakiInstance().getOrganizationTopApplicationsReport(organizationId, timespan);
   } catch (error) {
     console.error('Error getting organization top applications report:', error);
     throw error;
@@ -1476,7 +1475,7 @@ export async function getWirelessSSIDTrafficShaping(networkId: string, ssidNumbe
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getWirelessSSIDTrafficShaping(networkId, ssidNumber);
+    return await getMerakiInstance().getWirelessSSIDTrafficShaping(networkId, ssidNumber);
   } catch (error) {
     console.error('Error getting wireless SSID traffic shaping:', error);
     throw error;
@@ -1490,7 +1489,7 @@ export async function updateWirelessSSIDTrafficShaping(networkId: string, ssidNu
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateWirelessSSIDTrafficShaping(networkId, ssidNumber, rules);
+    return await getMerakiInstance().updateWirelessSSIDTrafficShaping(networkId, ssidNumber, rules);
   } catch (error) {
     console.error('Error updating wireless SSID traffic shaping:', error);
     throw error;
@@ -1504,7 +1503,7 @@ export async function getApplianceTrafficShaping(networkId: string) {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getApplianceTrafficShaping(networkId);
+    return await getMerakiInstance().getApplianceTrafficShaping(networkId);
   } catch (error) {
     console.error('Error getting appliance traffic shaping:', error);
     throw error;
@@ -1518,7 +1517,7 @@ export async function updateApplianceTrafficShaping(networkId: string, rules: an
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateApplianceTrafficShaping(networkId, rules);
+    return await getMerakiInstance().updateApplianceTrafficShaping(networkId, rules);
   } catch (error) {
     console.error('Error updating appliance traffic shaping:', error);
     throw error;
@@ -1570,7 +1569,7 @@ export async function getSwitchPorts(serial: string): Promise<SwitchPort[]> {
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getSwitchPorts(serial);
+    return await getMerakiInstance().getSwitchPorts(serial);
   } catch (error) {
     console.error('Error getting switch ports:', error);
     throw error;
@@ -1584,7 +1583,7 @@ export async function getSwitchPort(serial: string, portId: string): Promise<Swi
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getSwitchPort(serial, portId);
+    return await getMerakiInstance().getSwitchPort(serial, portId);
   } catch (error) {
     console.error('Error getting switch port:', error);
     throw error;
@@ -1598,7 +1597,7 @@ export async function updateSwitchPort(serial: string, portId: string, config: P
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.updateSwitchPort(serial, portId, config);
+    return await getMerakiInstance().updateSwitchPort(serial, portId, config);
   } catch (error) {
     console.error('Error updating switch port:', error);
     throw error;
@@ -1612,7 +1611,7 @@ export async function getSwitchPortStatuses(serial: string): Promise<SwitchPortS
     }
     
     const meraki = new MerakiAPI(process.env.MERAKI_API_KEY);
-    return await meraki.getSwitchPortStatuses(serial);
+    return await getMerakiInstance().getSwitchPortStatuses(serial);
   } catch (error) {
     console.error('Error getting switch port statuses:', error);
     throw error;

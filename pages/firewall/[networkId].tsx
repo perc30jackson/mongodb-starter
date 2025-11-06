@@ -229,12 +229,12 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
 
   return (
     <Layout>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-6 space-y-6 bg-color-background-100">
         <Breadcrumb />
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Firewall Management</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-bold tracking-tight text-color-text-100">Firewall Management</h1>
+            <p className="text-color-text-300">
               Configure and monitor MX security appliances for {network.name}
             </p>
           </div>
@@ -356,6 +356,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                         <Button 
                           size="sm" 
                           variant="outline"
+                          disabled={true}
                           onClick={async () => {
                             try {
                               const response = await fetch(`/api/firewall/layer7/${networkId}`, {
@@ -418,7 +419,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                     ) : (
                       <div className="max-h-96 overflow-y-auto custom-scrollbar">
                         <table className="w-full">
-                          <thead className="sticky top-0 bg-background border-b">
+                          <thead className="sticky top-0 bg-background border-b border-color-border-200">
                             <tr className="text-left">
                               <th className="p-3 font-medium text-sm">Policy</th>
                               <th className="p-3 font-medium text-sm">Type</th>
@@ -431,7 +432,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                             {filteredLayer7Rules.map((rule, index) => {
                                 const originalIndex = layer7FirewallRules.findIndex(r => r === rule);
                                 return (
-                              <tr key={index} className="border-b hover:bg-muted/50">
+                              <tr key={index} className="border-b border-color-border-200 hover:bg-muted/50">
                                 <td className="p-3">
                                   <Badge 
                                     variant={rule.policy === 'deny' ? 'destructive' : 'default'}
@@ -575,7 +576,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                             return (
                               <div key={ruleIndex} className="border rounded-lg bg-red-50 dark:bg-red-950/20">
                                 {/* Header */}
-                                <div className="flex items-center justify-between p-3 border-b bg-red-100 dark:bg-red-900/30 rounded-t-lg">
+                                <div className="flex items-center justify-between p-3 border-b border-color-border-200 bg-red-100 dark:bg-red-900/30 rounded-t-lg">
                                   <div className="flex items-center space-x-3">
                                     <div className="w-6 h-4 bg-red-500 rounded-sm flex items-center justify-center">
                                       <span className="text-white text-xs font-bold">🚫</span>
@@ -603,7 +604,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                                   {filteredCountries.map((countryCode, countryIndex) => {
                                     const countryInfo = getCountryInfo(countryCode);
                                     return (
-                                      <div key={countryIndex} className="flex items-center justify-between p-2 border-b last:border-b-0 hover:bg-red-100 dark:hover:bg-red-900/20">
+                                      <div key={countryIndex} className="flex items-center justify-between p-2 border-b border-color-border-200 last:border-b-0 hover:bg-red-100 dark:hover:bg-red-900/20">
                                         <div className="flex items-center space-x-3">
                                           <img 
                                             src={countryInfo.flagUrl} 
@@ -674,8 +675,15 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
               <CardContent>
                 <FirewallRuleTable 
                   rules={rules} 
-                  setRules={setRules}
-                  mxDevices={mxDevices}
+                  onRuleEdit={(rule, index) => {
+                    // Handle rule edit
+                    console.log('Edit rule:', rule, index);
+                  }}
+                  onRuleDelete={(index) => {
+                    const newRules = rules.filter((_, i) => i !== index);
+                    setRules(newRules);
+                  }}
+                  isEditing={true}
                 />
               </CardContent>
             </Card>
@@ -832,7 +840,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                       <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center space-x-3">
                           <Filter className="w-4 h-4 text-red-500" />
-                          <span className="text-sm">{category}</span>
+                          <span className="text-sm">{category.name || category.id}</span>
                         </div>
                         <Button 
                           size="sm" 
@@ -863,9 +871,10 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                       className="flex-1 px-3 py-2 border rounded-md text-sm"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                          const value = e.currentTarget.value.trim();
                           setContentFilter({
                             ...contentFilter,
-                            blockedUrlCategories: [...contentFilter.blockedUrlCategories, e.currentTarget.value.trim()]
+                            blockedUrlCategories: [...contentFilter.blockedUrlCategories, { id: value, name: value }]
                           });
                           e.currentTarget.value = '';
                         }
@@ -876,9 +885,10 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
                       onClick={(e) => {
                         const input = (e.target as HTMLElement).parentElement?.querySelector('input');
                         if (input?.value.trim()) {
+                          const value = input.value.trim();
                           setContentFilter({
                             ...contentFilter,
-                            blockedUrlCategories: [...contentFilter.blockedUrlCategories, input.value.trim()]
+                            blockedUrlCategories: [...contentFilter.blockedUrlCategories, { id: value, name: value }]
                           });
                           input.value = '';
                         }
@@ -928,6 +938,7 @@ export default function FirewallPage({ network, devices, firewallRules, layer7Ru
 
             <div className="flex justify-end">
               <Button 
+                disabled={true}
                 onClick={async () => {
                   try {
                     const response = await fetch(`/api/firewall/content-filtering/${networkId}`, {

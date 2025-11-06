@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Building2, Network, FileText, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Meta, { MetaProps } from '@/components/layout/meta';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,17 +30,17 @@ export default function Layout({
   const currentPage = getCurrentPage();
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-color-background-100 text-color-text-100">
       {meta && <Meta props={meta} />}
       
       {showNavigation && (
-        <header className="border-b border-gray-800">
+        <header className="border-b border-color-border-200 bg-color-background-100">
           <nav className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center space-x-6">
               {/* Logo/Brand */}
               <Link href="/" className="flex items-center space-x-2">
-                <Network className="h-6 w-6 text-blue-500" />
-                <span className="text-lg font-semibold">Meraki Dashboard</span>
+                <Network className="h-6 w-6 text-color-primary-100" />
+                <span className="text-lg font-semibold text-color-text-100">Meraki Manager</span>
               </Link>
               
               {/* Navigation Buttons */}
@@ -88,11 +89,15 @@ export default function Layout({
               </div>
             </div>
             
-            {/* Mobile menu button */}
-            <div className="md:hidden">
+            {/* Mobile menu button and theme toggle */}
+            <div className="flex items-center space-x-2 md:hidden">
+              <ThemeToggle />
               <Button variant="ghost" size="sm">
                 <Menu className="h-5 w-5" />
               </Button>
+            </div>
+            <div className="hidden md:flex items-center">
+              <ThemeToggle />
             </div>
           </nav>
           

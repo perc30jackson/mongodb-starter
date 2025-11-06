@@ -21,12 +21,12 @@ export default function SwitchPage({ network, devices, switchPorts }: SwitchPage
   const msDevices = devices.filter(device => device.productType === 'switch');
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 space-y-6 bg-color-background-100">
       <Breadcrumb />
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Switch Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-color-text-100">Switch Management</h1>
+          <p className="text-color-text-300">
             Configure and monitor MS switches for {network.name}
           </p>
         </div>
@@ -101,10 +101,10 @@ export default function SwitchPage({ network, devices, switchPorts }: SwitchPage
                     </Badge>
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button size="sm" variant="outline" className="flex-1" disabled={true}>
                       Blink LEDs
                     </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
+                    <Button size="sm" variant="outline" className="flex-1" disabled={true}>
                       Reboot
                     </Button>
                   </div>

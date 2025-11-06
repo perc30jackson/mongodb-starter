@@ -7,7 +7,7 @@ import { useState, useMemo } from 'react';
 import { DirectoryIcon, SearchIcon } from '@/components/icons';
 import { Network, Filter, SortAsc, SortDesc, X } from 'lucide-react';
 import NetworkDirectoryResults from '@/components/layout/network-directory-results';
-
+import { Input } from '@/components/ui/input';
 export default function NetworkDirectory({
   results,
   totalNetworks,
@@ -108,8 +108,12 @@ export default function NetworkDirectory({
   };
 
   return (
-    <aside className="flex-shrink-0 w-full bg-background sm:w-96 h-screen overflow-hidden border-r border-border flex flex-col">
-      <div className="px-6 pt-6 pb-0 bg-background z-20 flex-shrink-0">
+    <aside 
+      className="flex-shrink-0 w-full sm:w-96 h-screen overflow-hidden border-r border-color-border-200 flex flex-col bg-color-background-90"
+    >
+      <div 
+        className="px-6 pt-6 pb-0 z-20 flex-shrink-0 bg-color-background-90"
+      >
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -183,11 +187,11 @@ export default function NetworkDirectory({
         )}
         
         <div className="flex items-center space-x-2 mb-4">
-          <Network className="h-6 w-6 text-primary" />
-          <p className="text-2xl text-foreground font-bold">Networks</p>
+          <Network className="h-6 w-6 text-color-primary-100" />
+          <p className="text-2xl font-bold text-color-text-100">Networks</p>
         </div>
         
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-sm text-color-text-300">
           {filteredNetworkCount < totalNetworks ? (
             <>
               Showing {Intl.NumberFormat('en-us').format(filteredNetworkCount)} of{' '}
@@ -204,15 +208,19 @@ export default function NetworkDirectory({
             <label htmlFor="search" className="sr-only">
               Search
             </label>
-            <div className="relative shadow-sm border-0 border-b-border rounded-none border-b-[1px] ">
-              <div className="absolute bg-background inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div 
+              className="relative shadow-sm border-0 border-b rounded-none border-b-[1px]"
+            >
+              <div 
+                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none bg-color-background-90"
+              >
                 <SearchIcon className="h-4 w-4 text-muted-foreground" />
               </div>
-              <input
+              <Input
                 type="search"
                 name="search"
                 id="search"
-                className="text-foreground placeholder:text-muted-foreground focus:ring-transparent border-none bg-background focus:border-transparent block w-full pl-10 sm:text-sm rounded-md"
+                className="focus:ring-transparent border-none focus:border-transparent block w-full pl-10 sm:text-sm rounded-md text-color-text-100 bg-color-background-90"
                 placeholder="Search networks"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -229,7 +237,9 @@ export default function NetworkDirectory({
         {debouncedQuery.length === 0 ? (
           (processedResults || results).map(({ _id: letter, networks }) => (
             <div key={letter} className="relative">
-              <div className="bg-card px-6 py-1 text-sm font-bold text-foreground uppercase">
+              <div 
+                className="px-6 py-1 text-sm font-bold uppercase bg-color-background-80 text-color-text-100"
+              >
                 <h3>{letter}</h3>
               </div>
               <NetworkDirectoryResults 

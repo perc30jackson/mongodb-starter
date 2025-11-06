@@ -184,7 +184,7 @@ export default function OrganizationDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-color-background-100">
       <div className="container mx-auto py-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -197,10 +197,10 @@ export default function OrganizationDetail() {
             </Link>
             <div>
               <div className="flex items-center space-x-2">
-                <Building2 className="h-6 w-6 text-primary" />
-                <h1 className="text-3xl font-bold text-foreground">{organization.name}</h1>
+                <Building2 className="h-6 w-6 text-color-primary-100" />
+                <h1 className="text-3xl font-bold text-color-text-100">{organization.name}</h1>
               </div>
-              <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
+              <div className="flex items-center space-x-4 mt-2 text-sm text-color-text-300">
                 <div className="flex items-center space-x-1">
                   <Globe className="h-4 w-4" />
                   <span>{organization.cloud?.region?.name || 'Unknown Region'}</span>

@@ -207,13 +207,13 @@ export default function OrganizationsPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-color-background-100">
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Building2 className="h-8 w-8" />
-                <h1 className="text-4xl font-bold">Organizations</h1>
+                <Building2 className="h-8 w-8 text-color-primary-100" />
+                <h1 className="text-4xl font-bold text-color-text-100">Organizations</h1>
               </div>
             </div>
             <div className="flex items-center gap-4">

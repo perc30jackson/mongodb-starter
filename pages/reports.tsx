@@ -11,8 +11,7 @@ export default function ReportBuilderPage() {
       title: 'Reports - Cisco Meraki Dashboard',
       description: 'Generate and export custom reports from your Cisco Meraki data'
     }}>
-      <div className="min-h-screen bg-background">
-        <Breadcrumb />
+      <div className="min-h-screen bg-color-background-100">
         <ReportBuilder />
       </div>
     </Layout>

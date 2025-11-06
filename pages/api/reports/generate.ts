@@ -134,6 +134,196 @@ async function fetchNetworksFromAPI(orgId: string): Promise<any[]> {
   }
 }
 
+// Helper function to apply translations to data
+async function applyTranslations(data: any[], selectedOrgs: string[]): Promise<any[]> {
+  if (!data || data.length === 0) return data;
+
+  console.log('Applying translations to backend data...');
+
+  // Caches for policy objects and groups
+  let groupCache: Record<string, string> | null = null;
+  let objectCache: Record<string, string> | null = null;
+
+  // Helper: fetch all networks for mapping
+  const fetchNetworkMap = async () => {
+    const allNetworks: any[] = [];
+    for (const orgId of selectedOrgs) {
+      try {
+        const networks = await fetchNetworksFromAPI(orgId);
+        allNetworks.push(...networks);
+      } catch (error) {
+        console.log(`Failed to fetch networks for org ${orgId}:`, error);
+      }
+    }
+    // Map: networkId -> networkName
+    const map: Record<string, string> = {};
+    allNetworks.forEach(net => {
+      map[net.id] = net.name;
+    });
+    return map;
+  };
+
+  // Declare cache variables outside the translation function
+  let organizationCaches: Map<string, { groups: Record<string, string>, objects: Record<string, string> }> = new Map();
+
+  // Helper: Build caches for all organizations upfront
+  const buildOrganizationCaches = async () => {
+    console.log(`Backend: Building caches for organizations: ${selectedOrgs.join(', ')}`);
+    
+    for (const orgId of selectedOrgs) {
+      if (organizationCaches.has(orgId)) {
+        console.log(`Backend: Cache already exists for org ${orgId}, skipping`);
+        continue;
+      }
+
+      const orgCache: { groups: Record<string, string>, objects: Record<string, string> } = { 
+        groups: {}, 
+        objects: {} 
+      };
+      
+      try {
+        // Fetch groups for this organization
+        const meraki = await getMerakiClient();
+        console.log(`Backend: Fetching groups for organization ${orgId}`);
+        const groups = await meraki.getPolicyObjectGroups(orgId);
+        if (Array.isArray(groups)) {
+          console.log(`Backend: Loaded ${groups.length} groups for org ${orgId}`);
+          groups.forEach((group: any) => {
+            orgCache.groups[group.id] = group.name;
+            console.log(`Backend: Cached group ${group.id} -> ${group.name}`);
+          });
+        } else {
+          console.log(`Backend: No groups array returned for org ${orgId}`);
+        }
+      } catch (error) {
+        console.log(`Backend: Failed to fetch groups for org ${orgId}:`, error);
+      }
+
+      try {
+        // Fetch objects for this organization
+        const meraki = await getMerakiClient();
+        console.log(`Backend: Fetching objects for organization ${orgId}`);
+        const objects = await meraki.getPolicyObjects(orgId);
+        if (Array.isArray(objects)) {
+          console.log(`Backend: Loaded ${objects.length} objects for org ${orgId}`);
+          objects.forEach((obj: any) => {
+            orgCache.objects[obj.id] = obj.name;
+            console.log(`Backend: Cached object ${obj.id} -> ${obj.name}`);
+          });
+        } else {
+          console.log(`Backend: No objects array returned for org ${orgId}`);
+        }
+      } catch (error) {
+        console.log(`Backend: Failed to fetch objects for org ${orgId}:`, error);
+      }
+
+      organizationCaches.set(orgId, orgCache);
+      console.log(`Backend: Completed cache for org ${orgId} - Groups: ${Object.keys(orgCache.groups).length}, Objects: ${Object.keys(orgCache.objects).length}`);
+    }
+    
+    console.log(`Backend: Cache building complete for ${organizationCaches.size} organizations`);
+  };
+
+  // Helper: Look up value in all organization caches
+  const lookupInCaches = (id: string, type: 'groups' | 'objects'): string | null => {
+    for (const [orgId, cache] of organizationCaches.entries()) {
+      if (cache[type][id]) {
+        console.log(`Backend: Found ${type.slice(0, -1)} translation in org ${orgId}: ${id} -> ${cache[type][id]}`);
+        return cache[type][id];
+      }
+    }
+    return null;
+  };
+
+  // Helper: translate GRP/OBJ values
+  const translateSpecialValue = async (value: string) => {
+    if (typeof value !== 'string') return value;
+    
+    // Check if value contains comma-separated GRP/OBJ values
+    if (value.includes(',') && (value.includes('GRP(') || value.includes('OBJ('))) {
+      console.log(`Backend: Processing comma-separated values: ${value}`);
+      
+      // Split by comma and process each part
+      const parts = value.split(',').map(part => part.trim());
+      const translatedParts: string[] = [];
+      
+      for (const part of parts) {
+        const translatedPart = await translateSpecialValue(part); // Recursive call for individual parts
+        translatedParts.push(translatedPart);
+      }
+      
+      const result = translatedParts.join(', ');
+      console.log(`Backend: Comma-separated translation result: ${result}`);
+      return result;
+    }
+    
+    // Handle Group references (GRP(...))
+    const grpMatch = value.match(/^GRP\(([^)]+)\)$/);
+    if (grpMatch) {
+      const groupId = grpMatch[1];
+      console.log(`Backend: Extracting group ID from ${value}: ${groupId}`);
+      
+      const translatedName = lookupInCaches(groupId, 'groups');
+      if (translatedName) {
+        console.log(`Backend: Found group translation: ${value} -> ${translatedName}`);
+        return translatedName;
+      }
+    }
+    
+    // Handle Object references (OBJ(...))
+    const objMatch = value.match(/^OBJ\(([^)]+)\)$/);
+    if (objMatch) {
+      const objectId = objMatch[1];
+      console.log(`Backend: Extracting object ID from ${value}: ${objectId}`);
+      
+      const translatedName = lookupInCaches(objectId, 'objects');
+      if (translatedName) {
+        console.log(`Backend: Found object translation: ${value} -> ${translatedName}`);
+        return translatedName;
+      }
+    }
+    
+    return value; // Return original if no translation found
+  };
+
+  // Apply translations to the data
+  try {
+    // 1. Build organization caches upfront (only once per organization)
+    await buildOrganizationCaches();
+    
+    // 2. Always fetch network map and add networkName if networkId exists
+    const networkMap = await fetchNetworkMap();
+    
+    const translatedData = await Promise.all(
+      data.map(async (row: any) => {
+        const translatedRow = { ...row };
+        
+        // Add network name if networkId exists
+        if (row.networkId && networkMap[row.networkId]) {
+          translatedRow.networkName = networkMap[row.networkId];
+        }
+        
+        // 3. Translate GRP/OBJ values in all string fields
+        for (const [key, value] of Object.entries(translatedRow)) {
+          if (typeof value === 'string' && (value.includes('GRP(') || value.includes('OBJ('))) {
+            console.log(`Backend: Translating ${key}: ${value}`);
+            translatedRow[key] = await translateSpecialValue(value);
+            console.log(`Backend: Translated to: ${translatedRow[key]}`);
+          }
+        }
+        
+        return translatedRow;
+      })
+    );
+
+    console.log(`Backend: Applied translations to ${translatedData.length} rows`);
+    return translatedData;
+  } catch (error) {
+    console.error('Backend: Error applying translations:', error);
+    return data; // Return original data if translation fails
+  }
+}
+
 // Helper function to fetch network devices directly from Meraki API
 async function fetchNetworkDevicesFromAPI(networkId: string): Promise<any[]> {
   try {
@@ -319,6 +509,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const reportConfig: ReportConfig = req.body;
     
+    console.log('Received report config:', JSON.stringify(reportConfig, null, 2));
+    console.log('Selected organizations:', reportConfig.selectedOrgs);
+    console.log('Selected networks:', reportConfig.selectedNetworks);
+    
     if (!reportConfig.dataSource) {
       return res.status(400).json({ error: 'Data source is required' });
     }
@@ -333,7 +527,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     switch (reportConfig.dataSource) {
       case 'organizations':
         const orgs = await fetchOrganizationsFromAPI();
+        console.log(`Fetched ${orgs.length} total organizations from API`);
+        console.log(`Filtering organizations by selectedOrgs: ${reportConfig.selectedOrgs.join(', ')}`);
         rawData = orgs.filter((org: any) => reportConfig.selectedOrgs.includes(org.id));
+        console.log(`After filtering: ${rawData.length} organizations remain`);
         break;
 
       case 'organization-details':
@@ -350,14 +547,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
 
       case 'inventory':
+        console.log(`Fetching inventory for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
         for (const orgId of reportConfig.selectedOrgs) {
           try {
+            console.log(`Fetching inventory for organization: ${orgId}`);
             const inventory = await fetchOrganizationInventoryFromAPI(orgId);
+            console.log(`Found ${inventory.length} inventory items for org ${orgId}`);
             rawData.push(...inventory);
           } catch (error) {
             console.error(`Error fetching inventory for org ${orgId}:`, error);
           }
         }
+        console.log(`Total inventory items collected: ${rawData.length}`);
         break;
 
       case 'networks':
@@ -479,6 +680,144 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         break;
 
+      case 'policy-objects':
+        console.log(`Fetching policy objects for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
+        for (const orgId of reportConfig.selectedOrgs) {
+          try {
+            console.log(`Fetching policy objects for organization: ${orgId}`);
+            const meraki = await getMerakiClient();
+            const policyObjects = await meraki.getPolicyObjects(orgId);
+            console.log(`Found ${policyObjects.length} policy objects for org ${orgId}`);
+            const objectsWithOrg = Array.isArray(policyObjects) 
+              ? policyObjects.map((obj: any) => ({ ...obj, organizationId: orgId }))
+              : [];
+            rawData.push(...objectsWithOrg);
+          } catch (error) {
+            console.error(`Error fetching policy objects for org ${orgId}:`, error);
+          }
+        }
+        console.log(`Total policy objects collected: ${rawData.length}`);
+        break;
+
+      case 'policy-object-groups':
+        console.log(`Fetching policy object groups for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
+        for (const orgId of reportConfig.selectedOrgs) {
+          try {
+            console.log(`Fetching policy object groups for organization: ${orgId}`);
+            const meraki = await getMerakiClient();
+            const policyObjectGroups = await meraki.getPolicyObjectGroups(orgId);
+            console.log(`Found ${policyObjectGroups.length} policy object groups for org ${orgId}`);
+            const groupsWithOrg = Array.isArray(policyObjectGroups) 
+              ? policyObjectGroups.map((group: any) => ({ ...group, organizationId: orgId }))
+              : [];
+            rawData.push(...groupsWithOrg);
+          } catch (error) {
+            console.error(`Error fetching policy object groups for org ${orgId}:`, error);
+          }
+        }
+        console.log(`Total policy object groups collected: ${rawData.length}`);
+        break;
+
+      case 'lockdown-report':
+        console.log(`Generating lockdown report for organizations: ${reportConfig.selectedOrgs.join(', ')}`);
+        
+        // Get organization names
+        const lockdownOrgs = await fetchOrganizationsFromAPI();
+        const orgMap = new Map(lockdownOrgs.map((org: any) => [org.id, org]));
+        
+        // Get network names and track which org they belong to
+        const allNetworks: any[] = [];
+        const networkToOrgMap = new Map<string, string>(); // networkId -> organizationId
+        
+        for (const orgId of reportConfig.selectedOrgs) {
+          try {
+            const networks = await fetchNetworksFromAPI(orgId);
+            networks.forEach((net: any) => {
+              allNetworks.push(net);
+              networkToOrgMap.set(net.id, orgId);
+            });
+          } catch (error) {
+            console.error(`Error fetching networks for org ${orgId}:`, error);
+          }
+        }
+        
+        const networkMap = new Map(allNetworks.map((net: any) => [net.id, net]));
+        
+        // Determine which networks to process
+        const lockdownNetworkIds = reportConfig.selectedNetworks.length > 0 
+          ? reportConfig.selectedNetworks.filter((netId: string) => networkMap.has(netId))
+          : allNetworks.map((net: any) => net.id);
+        
+        // Process each network
+        for (const networkId of lockdownNetworkIds) {
+          try {
+            const network = networkMap.get(networkId);
+            const orgId = networkToOrgMap.get(networkId) || network?.organizationId || '';
+            const org = orgMap.get(orgId);
+            
+            // Fetch firewall rules for this network
+            const rules = await fetchFirewallRulesFromAPI(networkId);
+            
+            // Filter out "Default rule" entries
+            const firewallRules = Array.isArray(rules) 
+              ? rules.filter((rule: any) => 
+                  !rule.comment || rule.comment.toLowerCase() !== 'default rule'
+                )
+              : [];
+            
+            let hasDenyAllRule = false;
+            let lastRulePolicy = 'unknown';
+            let lastRuleComment = '';
+            
+            if (firewallRules.length > 0) {
+              const lastRule = firewallRules[firewallRules.length - 1];
+              lastRulePolicy = lastRule.policy || 'unknown';
+              lastRuleComment = lastRule.comment || '';
+              
+              // Check if the last rule is a deny-all rule
+              if (lastRule.policy === 'deny') {
+                const srcCidr = (lastRule.srcCidr || '').toLowerCase();
+                const destCidr = (lastRule.destCidr || '').toLowerCase();
+                const protocol = (lastRule.protocol || '').toLowerCase();
+                
+                if ((srcCidr === 'any' || srcCidr === '0.0.0.0/0' || srcCidr === '::/0') &&
+                    (destCidr === 'any' || destCidr === '0.0.0.0/0' || destCidr === '::/0') &&
+                    (protocol === 'any' || protocol === '')) {
+                  hasDenyAllRule = true;
+                }
+              }
+            }
+            
+            rawData.push({
+              networkId,
+              networkName: network?.name || networkId,
+              organizationId: orgId,
+              organizationName: org?.name || orgId,
+              hasDenyAllRule,
+              lastRulePolicy,
+              lastRuleComment
+            });
+          } catch (error) {
+            console.error(`Error processing lockdown report for network ${networkId}:`, error);
+            // Add error entry
+            const network = networkMap.get(networkId);
+            const orgId = networkToOrgMap.get(networkId) || network?.organizationId || reportConfig.selectedOrgs[0] || '';
+            const org = orgMap.get(orgId);
+            
+            rawData.push({
+              networkId,
+              networkName: network?.name || networkId,
+              organizationId: orgId,
+              organizationName: org?.name || orgId,
+              hasDenyAllRule: false,
+              lastRulePolicy: 'ERROR',
+              lastRuleComment: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+        console.log(`Total lockdown report entries: ${rawData.length}`);
+        break;
+
       default:
         return res.status(400).json({ error: 'Invalid data source' });
     }
@@ -495,7 +834,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Select columns
-    const finalData = selectColumns(filteredData, reportConfig.columns);
+    let finalData = selectColumns(filteredData, reportConfig.columns);
+
+    // Apply translations to the final data
+    finalData = await applyTranslations(finalData, reportConfig.selectedOrgs);
 
     // Create metadata
     const metadata = {
